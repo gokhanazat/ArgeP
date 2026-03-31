@@ -20,7 +20,8 @@ data class AuthState(
     val isLoading: Boolean = false,
     val isLoggedIn: Boolean = false,
     val error: String? = null,
-    val currentUser: UserInfo? = null
+    val currentUser: UserInfo? = null,
+    val userProfile: com.argesurec.shared.model.UserProfile? = null
 )
 
 class AuthViewModel(
@@ -41,11 +42,14 @@ class AuthViewModel(
                 _state.update { currentState ->
                     when (status) {
                         is SessionStatus.Authenticated -> {
+                            val user = status.session.user
                             currentState.copy(
                                 isLoggedIn = true,
-                                currentUser = status.session.user,
+                                currentUser = user,
                                 isLoading = false
-                            )
+                            ).also {
+                                user?.id?.let { fetchProfile(it) }
+                            }
                         }
                         is SessionStatus.NotAuthenticated -> {
                             currentState.copy(
@@ -131,14 +135,13 @@ class AuthViewModel(
                 // 2. Update Public Profiles Table
                 val userId = supabase.auth.currentUserOrNull()?.id
                 if (userId != null) {
-                    supabase.from("profiles").update(
+                    supabase.from("profiles").upsert(
                         buildJsonObject {
+                            put("id", userId)
                             put("full_name", fullName)
                             put("department", department ?: "")
                         }
-                    ) {
-                        filter { eq("id", userId) }
-                    }
+                    )
                 }
 
                 // Refresh current user
@@ -147,6 +150,20 @@ class AuthViewModel(
             } catch (e: Exception) {
                 println("Auth Error (UpdateProfile): ${e.message}")
                 _state.update { it.copy(isLoading = false, error = e.message ?: "Profil güncelleme hatası.") }
+            }
+        }
+    }
+
+    private fun fetchProfile(userId: String) {
+        viewModelScope.launch {
+            try {
+                val profile = supabase.from("profiles")
+                    .select { filter { eq("id", userId) } }
+                    .decodeSingleOrNull<com.argesurec.shared.model.UserProfile>()
+                
+                _state.update { it.copy(userProfile = profile) }
+            } catch (e: Exception) {
+                println("Auth Error (FetchProfile): ${e.message}")
             }
         }
     }

@@ -32,7 +32,8 @@ enum class RoleAction {
 }
 
 object RoleManager {
-    fun hasPermission(role: ProjectRole?, action: RoleAction): Boolean {
+    fun hasPermission(role: ProjectRole?, action: RoleAction, isAdmin: Boolean = false): Boolean {
+        if (isAdmin) return true
         if (role == null) return false
         
         return when (role) {
@@ -41,7 +42,7 @@ object RoleManager {
                 RoleAction.CREATE_TASK -> false
                 RoleAction.UPDATE_OWN_TASK -> true
                 RoleAction.VIEW_ONLY -> false
-                else -> true // Diğer yetkiler PM'e yakın veya kısıtlı olabilir, isteğe göre daraltılır
+                else -> true 
             }
             ProjectRole.ARGE_UZMANI, 
             ProjectRole.TEST_MUHENDISI, 
@@ -79,13 +80,17 @@ fun RoleGuard(
     content: @Composable () -> Unit
 ) {
     val teamRepository = koinInject<TeamRepository>()
-    val auth = koinInject<Auth>()
+    val auth = koinInject<io.github.jan.supabase.auth.Auth>()
+    val authViewModel = org.koin.compose.viewmodel.koinViewModel<com.argesurec.shared.viewmodel.AuthViewModel>()
+    
+    val authState by authViewModel.state.collectAsState()
+    val isAdmin = authState.userProfile?.isAdmin ?: false
     
     val currentRole by remember(projectId) {
         RoleManager.currentUserRole(projectId, teamRepository, auth)
     }.collectAsState(initial = null)
 
-    if (RoleManager.hasPermission(currentRole, requiredAction)) {
+    if (RoleManager.hasPermission(currentRole, requiredAction, isAdmin)) {
         content()
     }
 }

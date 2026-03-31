@@ -10,7 +10,6 @@ import io.github.jan.supabase.functions.functions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -26,12 +25,16 @@ class TeamViewModel(
 
     private val _state = MutableStateFlow<UiState<TeamData>>(UiState.Loading)
     val state: StateFlow<UiState<TeamData>> = _state.asStateFlow()
-    
+
+    /** Sadece davet/üye ekleme işlemi sırasında dönen spinner için */
+    private val _isActionLoading = MutableStateFlow(false)
+    val isActionLoading: StateFlow<Boolean> = _isActionLoading.asStateFlow()
+
     private val _actionMessage = MutableStateFlow<String?>(null)
     val actionMessage: StateFlow<String?> = _actionMessage.asStateFlow()
 
     fun clearActionMessage() { _actionMessage.value = null }
-    
+
     private var currentProjectId: String? = null
 
     init {
@@ -67,18 +70,26 @@ class TeamViewModel(
 
     fun inviteMember(email: String, role: String, projectId: String) {
         viewModelScope.launch {
-            _state.emit(UiState.Loading)
+            _isActionLoading.value = true
             try {
+                // Proje ID kontrolü: Eğer bir projenin içinde değilsek davet gönderilmesini engelle
+                if (projectId == "global" || projectId.isEmpty()) {
+                    _actionMessage.emit("Lütfen önce projenin içine girip oradan davet gönderin.")
+                    return@launch
+                }
+
                 // Edge Function: /functions/v1/invite-member
                 supabase.functions.invoke("invite-member", buildJsonObject {
                     put("email", email)
                     put("projectId", projectId)
                     put("role", role)
                 })
-                loadTeamForProject(projectId)
                 _actionMessage.emit("Davet başarıyla gönderildi.")
+                loadTeamForProject(projectId)
             } catch (e: Exception) {
                 _actionMessage.emit(e.message ?: "Davet gönderilemedi.")
+            } finally {
+                _isActionLoading.value = false
             }
         }
     }

@@ -38,7 +38,9 @@ class ProjectsViewModel(
         loadProjects()
     }
 
-    fun loadProjects() {
+    fun loadProjects(force: Boolean = false) {
+        if (!force && _state.value is UiState.Success) return
+        
         viewModelScope.launch {
             _state.emit(UiState.Loading)
             try {
@@ -70,7 +72,15 @@ class ProjectsViewModel(
         }
     }
 
-    fun createProject(nameInput: String, descriptionInput: String?, phaseInput: ProjectPhase, budgetTotal: Double = 0.0, budgetSpent: Double = 0.0) {
+    fun createProject(
+        nameInput: String, 
+        descriptionInput: String?, 
+        phaseInput: ProjectPhase, 
+        budgetTotal: Double = 0.0, 
+        budgetSpent: Double = 0.0,
+        startDate: String? = null,
+        endDate: String? = null
+    ) {
         viewModelScope.launch {
             val ownerId = supabase.auth.currentUserOrNull()?.id
             if (ownerId == null) {
@@ -86,6 +96,8 @@ class ProjectsViewModel(
                 ownerId = ownerId,
                 budgetTotal = budgetTotal,
                 budgetSpent = budgetSpent,
+                startDate = startDate,
+                endDate = endDate,
                 createdAt = null
             )
 
@@ -99,11 +111,23 @@ class ProjectsViewModel(
         }
     }
 
+    fun updateProject(project: Project) {
+        viewModelScope.launch {
+            val result = repository.update(project)
+            if (result.isSuccess) {
+                loadProjects(force = true)
+                _actionMessage.emit("Proje başarıyla güncellendi.")
+            } else {
+                _actionMessage.emit(result.exceptionOrNull()?.message ?: "Güncelleme başarısız.")
+            }
+        }
+    }
+
     fun deleteProject(id: String) {
         viewModelScope.launch {
             val result = repository.delete(id)
             if (result.isSuccess) {
-                loadProjects()
+                loadProjects(force = true)
             } else {
                 _state.emit(UiState.Error(result.exceptionOrNull()?.message ?: "Silme işlemi başarısız."))
             }

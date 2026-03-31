@@ -12,11 +12,12 @@ import com.argesurec.shared.ui.home.ProfileScreen
 import com.argesurec.shared.ui.home.ReportsScreen
 import com.argesurec.shared.ui.project.ProjectsScreen
 import com.argesurec.shared.ui.team.TeamScreen
+import cafe.adriel.voyager.navigator.Navigator
 
 object HomeTab : Tab {
     @Composable
     override fun Content() {
-        HomeScreen().Content()
+        Navigator(HomeScreen())
     }
 
     override val options: TabOptions
@@ -32,7 +33,7 @@ object HomeTab : Tab {
 object ProjectsTab : Tab {
     @Composable
     override fun Content() {
-        ProjectsScreen().Content()
+        Navigator(ProjectsScreen())
     }
 
     override val options: TabOptions
@@ -48,7 +49,7 @@ object ProjectsTab : Tab {
 object ReportsTab : Tab {
     @Composable
     override fun Content() {
-        ReportsScreen().Content()
+        Navigator(ReportsScreen())
     }
 
     override val options: TabOptions
@@ -64,9 +65,7 @@ object ReportsTab : Tab {
 object TeamTab : Tab {
     @Composable
     override fun Content() {
-        // Not: Global ekip ekranı her projeyi kapsayabilir 
-        // veya varsayılan bir proje ID üzerinden başlatılabilir.
-        TeamScreen("global").Content() 
+        Navigator(TeamScreen(projectId = null)) 
     }
 
     override val options: TabOptions
@@ -82,7 +81,7 @@ object TeamTab : Tab {
 object ProfileTab : Tab {
     @Composable
     override fun Content() {
-        ProfileScreen().Content()
+        Navigator(ProfileScreen())
     }
 
     override val options: TabOptions

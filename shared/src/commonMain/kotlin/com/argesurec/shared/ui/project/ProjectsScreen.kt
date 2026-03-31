@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
@@ -76,8 +78,8 @@ class ProjectsScreen : Screen {
                         if (showCreateDialog) {
                             CreateProjectDialog(
                                 onDismiss = { showCreateDialog = false },
-                                onCreate = { name, desc, phase, total, spent ->
-                                    viewModel.createProject(name, desc, phase, total, spent)
+                                onCreate = { name, desc, phase, total, spent, start, end ->
+                                    viewModel.createProject(name, desc, phase, total, spent, start, end)
                                     showCreateDialog = false
                                 }
                             )
@@ -92,7 +94,7 @@ class ProjectsScreen : Screen {
             Column(modifier = Modifier.padding(padding).fillMaxSize()) {
                 when (val uiState = state) {
                     is UiState.Loading -> LoadingScreen("Projeler yükleniyor...")
-                    is UiState.Error -> ErrorScreen(uiState.message, onRetry = { viewModel.loadProjects() })
+                    is UiState.Error -> ErrorScreen(uiState.message, onRetry = { viewModel.loadProjects(force = true) })
                     is UiState.Success -> {
                         val allProjects = uiState.data.projects
                         val filteredProjects = if (selectedFilter == "Tümü") {
@@ -246,87 +248,193 @@ fun PremiumProjectCard(project: Project, onClick: () -> Unit) {
 @Composable
 fun NewProjectPlaceholderCard(onClick: () -> Unit = {}) {
     Surface(
-        modifier = Modifier.fillMaxWidth().height(180.dp).clickable { onClick() },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onClick() },
         color = ArgepColors.Slate50,
         shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(2.dp, ArgepColors.Slate200) 
+        border = androidx.compose.foundation.BorderStroke(2.dp, ArgepColors.Slate200)
     ) {
-        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("+", fontSize = 28.sp, color = ArgepColors.Slate400, fontWeight = FontWeight.Light)
-            Text("Yeni Proje Oluştur", style = MaterialTheme.typography.titleSmall, color = ArgepColors.Slate400, fontWeight = FontWeight.Medium)
+        Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Surface(
+                modifier = Modifier.size(48.dp),
+                color = ArgepColors.White,
+                shape = CircleShape,
+                shadowElevation = 2.dp
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Add, contentDescription = null, tint = ArgepColors.Navy700, modifier = Modifier.size(24.dp))
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Yeni Proje Oluştur", style = MaterialTheme.typography.titleMedium, color = ArgepColors.Navy900, fontWeight = FontWeight.Bold)
+            Text("Yeni bir Ar-Ge süreci başlatın", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateProjectDialog(
     onDismiss: () -> Unit,
-    onCreate: (String, String?, com.argesurec.shared.model.ProjectPhase, Double, Double) -> Unit
+    onCreate: (String, String?, com.argesurec.shared.model.ProjectPhase, Double, Double, String?, String?) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var budgetTotal by remember { mutableStateOf("") }
     var budgetSpent by remember { mutableStateOf("") }
+    var startDate by remember { mutableStateOf("") }
+    var endDate by remember { mutableStateOf("") }
     var selectedPhase by remember { mutableStateOf(com.argesurec.shared.model.ProjectPhase.DEVELOPMENT) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Yeni Proje Oluştur") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Proje Adı") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Açıklama") }, modifier = Modifier.fillMaxWidth())
-                
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = budgetTotal, 
-                        onValueChange = { if(it.all { c -> c.isDigit() || c == '.' }) budgetTotal = it }, 
-                        label = { Text("Toplam Bütçe") }, 
-                        modifier = Modifier.weight(1f)
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier.padding(horizontal = 24.dp).fillMaxWidth(0.95f),
+        content = {
+            Surface(
+                modifier = Modifier.fillMaxWidth().wrapContentHeight(),
+                shape = RoundedCornerShape(16.dp),
+                color = ArgepColors.White
+            ) {
+                Column(modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState())) {
+                    Text(
+                        "Yeni Proje Başlat",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = ArgepColors.Navy900
                     )
-                    OutlinedTextField(
-                        value = budgetSpent, 
-                        onValueChange = { if(it.all { c -> c.isDigit() || c == '.' }) budgetSpent = it }, 
-                        label = { Text("Harcanan Bütçe") }, 
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+                    Text("Projeye dair temel bilgileri girin", style = MaterialTheme.typography.bodySmall, color = ArgepColors.Slate500)
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            label = { Text("Proje Adı", fontSize = 12.sp) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp),
+                            placeholder = { Text("Örn: Akıllı Tarım Kiti", fontSize = 14.sp) }
+                        )
 
-                Text("PROJE AŞAMASI", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = ArgepColors.Slate500)
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    com.argesurec.shared.model.ProjectPhase.entries.forEach { phase ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically, 
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { selectedPhase = phase }
-                                .padding(vertical = 4.dp)
-                        ) {
-                            RadioButton(selected = selectedPhase == phase, onClick = { selectedPhase = phase })
-                            Text(
-                                when(phase) {
-                                    com.argesurec.shared.model.ProjectPhase.INCUBATION -> "Kuluçka"
-                                    com.argesurec.shared.model.ProjectPhase.DEVELOPMENT -> "Geliştirme"
-                                    com.argesurec.shared.model.ProjectPhase.COMMERCIALIZATION -> "Ticarileşme"
-                                },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (selectedPhase == phase) ArgepColors.Navy900 else ArgepColors.Slate600
+                        OutlinedTextField(
+                            value = description,
+                            onValueChange = { description = it },
+                            label = { Text("Proje Amacı ve Açıklama", fontSize = 12.sp) },
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 3,
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedTextField(
+                                value = budgetTotal, 
+                                onValueChange = { if(it.all { c -> c.isDigit() || c == '.' }) budgetTotal = it }, 
+                                label = { Text("Toplam Bütçe (₺)", fontSize = 11.sp) }, 
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp)
                             )
+                            OutlinedTextField(
+                                value = budgetSpent, 
+                                onValueChange = { if(it.all { c -> c.isDigit() || c == '.' }) budgetSpent = it }, 
+                                label = { Text("Mevcut Harcama (₺)", fontSize = 11.sp) }, 
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedTextField(
+                                value = startDate, 
+                                onValueChange = { startDate = it }, 
+                                label = { Text("Başlangıç Tarihi", fontSize = 11.sp) }, 
+                                placeholder = { Text("YYYY-MM-DD", fontSize = 12.sp) },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            OutlinedTextField(
+                                value = endDate, 
+                                onValueChange = { endDate = it }, 
+                                label = { Text("Hedef Bitiş Tarihi", fontSize = 11.sp) }, 
+                                placeholder = { Text("YYYY-MM-DD", fontSize = 12.sp) },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+
+                        Text("PROJE FAZI", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = ArgepColors.Navy700)
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            com.argesurec.shared.model.ProjectPhase.entries.forEach { phase ->
+                                val isSelected = selectedPhase == phase
+                                Surface(
+                                    modifier = Modifier.weight(1f).clickable { selectedPhase = phase },
+                                    color = if (isSelected) ArgepColors.Navy700 else ArgepColors.Slate50,
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = if (!isSelected) androidx.compose.foundation.BorderStroke(1.dp, ArgepColors.Slate200) else null
+                                ) {
+                                    Box(modifier = Modifier.padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
+                                        Text(
+                                            when(phase) {
+                                                com.argesurec.shared.model.ProjectPhase.INCUBATION -> "Kuluçka"
+                                                com.argesurec.shared.model.ProjectPhase.DEVELOPMENT -> "Geliştirme"
+                                                com.argesurec.shared.model.ProjectPhase.COMMERCIALIZATION -> "Ticarileşme"
+                                            },
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isSelected) Color.White else ArgepColors.Slate600
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(32.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        TextButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Vazgeç", color = ArgepColors.Slate500)
+                        }
+                        Button(
+                            onClick = { 
+                                onCreate(
+                                    name, 
+                                    description, 
+                                    selectedPhase, 
+                                    budgetTotal.toDoubleOrNull() ?: 0.0, 
+                                    budgetSpent.toDoubleOrNull() ?: 0.0,
+                                    if(startDate.isNotBlank()) startDate else null,
+                                    if(endDate.isNotBlank()) endDate else null
+                                ) 
+                            },
+                            modifier = Modifier.weight(1.5f),
+                            colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.Navy700),
+                            shape = RoundedCornerShape(10.dp),
+                            enabled = name.isNotBlank()
+                        ) {
+                            Text("Projeyi Oluştur", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
             }
-        },
-        confirmButton = {
-            Button(onClick = { 
-                onCreate(name, description, selectedPhase, budgetTotal.toDoubleOrNull() ?: 0.0, budgetSpent.toDoubleOrNull() ?: 0.0) 
-            }) {
-                Text("Oluştur")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("İptal") }
         }
     )
 }

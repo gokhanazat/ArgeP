@@ -32,13 +32,14 @@ import com.argesurec.shared.util.ProjectRole
 import com.argesurec.shared.util.UiState
 import com.argesurec.shared.viewmodel.TeamViewModel
 
-class TeamScreen(private val projectId: String) : Screen {
+class TeamScreen(private val projectId: String?) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = koinViewModel<TeamViewModel>()
         val state by viewModel.state.collectAsState()
+        val isActionLoading by viewModel.isActionLoading.collectAsState()
 
         val snackbarHostState = remember { SnackbarHostState() }
         val actionMessage by viewModel.actionMessage.collectAsState()
@@ -49,7 +50,11 @@ class TeamScreen(private val projectId: String) : Screen {
         var memberToEditRole by remember { mutableStateOf<TeamMemberWithProfile?>(null) }
 
         LaunchedEffect(projectId) {
-            viewModel.loadTeamForProject(projectId)
+            if (projectId != null) {
+                viewModel.loadTeamForProject(projectId)
+            } else {
+                viewModel.loadTeam()
+            }
         }
 
         LaunchedEffect(actionMessage) {
@@ -63,7 +68,7 @@ class TeamScreen(private val projectId: String) : Screen {
             InviteMemberDialog(
                 onDismiss = { showInviteDialog = false },
                 onInvite = { email, role ->
-                    viewModel.inviteMember(email, role, projectId)
+                    projectId?.let { viewModel.inviteMember(email, role, it) }
                     showInviteDialog = false
                 }
             )
@@ -85,7 +90,7 @@ class TeamScreen(private val projectId: String) : Screen {
                 member = memberToEditRole!!,
                 onDismiss = { memberToEditRole = null },
                 onConfirm = { newRole ->
-                    viewModel.updateMemberRole(memberToEditRole!!.id, projectId, newRole)
+                    projectId?.let { viewModel.updateMemberRole(memberToEditRole!!.id, it, newRole) }
                     memberToEditRole = null
                 }
             )
@@ -97,7 +102,7 @@ class TeamScreen(private val projectId: String) : Screen {
                     title = {
                         Column {
                             Text("Ekip Yönetimi", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = ArgepColors.Navy900)
-                            Text("Projeye Dahil Üyeler", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
+                            Text(if (projectId != null) "Projeye Dahil Üyeler" else "Tüm Ekip Üyeleri", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = ArgepColors.White),
@@ -115,7 +120,11 @@ class TeamScreen(private val projectId: String) : Screen {
                 is UiState.Loading -> LoadingScreen("Ekip listeleniyor...")
                 is UiState.Error -> ErrorScreen(uiState.message, onRetry = { viewModel.loadTeam() })
                 is UiState.Success -> {
-                    val members = uiState.data.members.filter { it.profile?.fullName?.contains(searchQuery, true) == true }
+                    val members = if (searchQuery.isEmpty()) {
+                        uiState.data.members
+                    } else {
+                        uiState.data.members.filter { it.profile?.fullName?.contains(searchQuery, true) == true }
+                    }
                     
                     Column(modifier = Modifier.padding(padding).fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp)) {
                         // Action Bar (Search & Invite)
@@ -141,13 +150,22 @@ class TeamScreen(private val projectId: String) : Screen {
                             )
                             
                             Button(
-                                onClick = { showInviteDialog = true },
+                                onClick = { if (!isActionLoading) showInviteDialog = true },
                                 modifier = Modifier.height(48.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.Navy700),
                                 shape = RoundedCornerShape(10.dp),
-                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+                                enabled = !isActionLoading
                             ) {
-                                Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                                if (isActionLoading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(18.dp),
+                                        color = androidx.compose.ui.graphics.Color.White,
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                                }
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text("Ekibe Ekle", style = MaterialTheme.typography.labelLarge)
                             }

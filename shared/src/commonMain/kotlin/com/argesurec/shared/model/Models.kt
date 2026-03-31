@@ -34,6 +34,20 @@ data class Project(
     @SerialName("owner_id") val ownerId: String,
     @SerialName("budget_total") val budgetTotal: Double? = 0.0,
     @SerialName("budget_spent") val budgetSpent: Double? = 0.0,
+    @SerialName("start_date") val startDate: String? = null,
+    @SerialName("end_date") val endDate: String? = null,
+    @SerialName("created_at") val createdAt: String? = null
+)
+
+@Serializable
+data class Expense(
+    @SerialName("id") val id: String? = null,
+    @SerialName("project_id") val projectId: String,
+    @SerialName("amount") val amount: Double,
+    @SerialName("category") val category: String,
+    @SerialName("description") val description: String? = null,
+    @SerialName("expense_date") val expenseDate: String? = null,
+    @SerialName("created_by") val createdBy: String? = null,
     @SerialName("created_at") val createdAt: String? = null
 )
 
@@ -74,7 +88,8 @@ data class UserProfile(
     @SerialName("id") val id: String,
     @SerialName("full_name") val fullName: String? = null,
     @SerialName("avatar_url") val avatarUrl: String? = null,
-    @SerialName("department") val department: String? = null
+    @SerialName("department") val department: String? = null,
+    @SerialName("is_admin") val isAdmin: Boolean = false
 )
 
 @Serializable

@@ -11,13 +11,12 @@ import java.util.UUID
 actual fun rememberFilePicker(onFileSelected: (SelectedFile?) -> Unit): FilePickerLauncher {
     val context = LocalContext.current
     val registryOwner = LocalActivityResultRegistryOwner.current
-        ?: error("No ActivityResultRegistryOwner found")
     
     val currentOnSelected by rememberUpdatedState(onFileSelected)
     val key = remember { "file_picker_" + UUID.randomUUID().toString() }
     
     val launcher = remember(registryOwner, key) {
-        registryOwner.activityResultRegistry.register(key, ActivityResultContracts.GetContent()) { uri: Uri? ->
+        registryOwner?.activityResultRegistry?.register(key, ActivityResultContracts.GetContent()) { uri: Uri? ->
             if (uri != null) {
                 try {
                     context.contentResolver.openInputStream(uri)?.use { inputStream ->
@@ -44,14 +43,14 @@ actual fun rememberFilePicker(onFileSelected: (SelectedFile?) -> Unit): FilePick
     
     DisposableEffect(launcher) {
         onDispose {
-            launcher.unregister()
+            launcher?.unregister()
         }
     }
 
     return remember(launcher) {
         object : FilePickerLauncher {
             override fun launch() {
-                launcher.launch("*/*")
+                launcher?.launch("*/*")
             }
         }
     }
