@@ -849,8 +849,7 @@ fun ExpensesCard(
 fun ExpenseLineChart(expenses: List<com.argesurec.shared.model.Expense>) {
     val chartData = expenses.groupBy { it.expenseDate?.take(7) ?: "Bilinmiyor" }
         .mapValues { it.value.sumOf { exp -> exp.amount } }
-        .toSortedMap()
-        .values.toList()
+        .entries.sortedBy { it.key }.map { it.value }
 
     if (chartData.size < 2) {
         Text("Grafik için daha fazla kayıt gerekli", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate400)
@@ -869,7 +868,7 @@ fun ExpenseLineChart(expenses: List<com.argesurec.shared.model.Expense>) {
             
             val path = Path()
             chartData.forEachIndexed { index, amount ->
-                val x = index * spacing
+                val x = index.toFloat() * spacing
                 val y = height - (amount.toFloat() / maxAmount * height)
                 if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
                 
