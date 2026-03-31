@@ -107,13 +107,22 @@ tasks.register("injectWasmEnv") {
         val supabaseUrl = System.getenv("SUPABASE_URL") ?: properties.getProperty("SUPABASE_URL")?.removeSurrounding("\"") ?: ""
         val supabaseKey = System.getenv("SUPABASE_ANON_KEY") ?: properties.getProperty("SUPABASE_ANON_KEY")?.removeSurrounding("\"") ?: ""
         
-        val configFile = file("src/wasmJsMain/kotlin/com/argesurec/shared/SupabaseConfig.kt")
-        if (configFile.exists()) {
+        // Root'tan bağımsız yolu bul
+        val configFilePath = "src/wasmJsMain/kotlin/com/argesurec/shared/SupabaseConfig.kt"
+        val configFile = file(configFilePath)
+        
+        if (configFile.exists() && supabaseUrl.isNotEmpty()) {
             var content = configFile.readText()
-            content = content.replace("SUPABASE_URL_PLACEHOLDER", supabaseUrl)
-            content = content.replace("SUPABASE_ANON_KEY_PLACEHOLDER", supabaseKey)
-            configFile.writeText(content)
-            println("WASM Environment variables injected successfully into ${configFile.name}")
+            if (content.contains("SUPABASE_URL_PLACEHOLDER")) {
+                content = content.replace("SUPABASE_URL_PLACEHOLDER", supabaseUrl)
+                content = content.replace("SUPABASE_ANON_KEY_PLACEHOLDER", supabaseKey)
+                configFile.writeText(content)
+                println(">>> SUCCESS: WASM Environment variables injected into ${configFile.absolutePath}")
+            } else {
+                println(">>> SKIP: Placeholders not found in ${configFile.name} (maybe already injected?)")
+            }
+        } else {
+            println(">>> WARNING: Could not inject WASM variables. File exists: ${configFile.exists()}, URL empty: ${supabaseUrl.isEmpty()}")
         }
     }
 }
