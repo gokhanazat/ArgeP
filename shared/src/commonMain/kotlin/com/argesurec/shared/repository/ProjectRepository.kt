@@ -12,4 +12,9 @@ interface ProjectRepository {
     suspend fun delete(id: String): Result<Unit>
     
     fun getByPhase(phase: ProjectPhase): Flow<List<Project>>
+    
+    // File Management
+    suspend fun uploadFile(projectId: String, fileName: String, bytes: ByteArray): Result<String>
+    suspend fun getFiles(projectId: String): Result<List<io.github.jan.supabase.storage.FileObject>>
+    suspend fun deleteFile(path: String): Result<Unit>
 }

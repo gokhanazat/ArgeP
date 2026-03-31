@@ -6,6 +6,7 @@ import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
+import io.github.jan.supabase.storage.Storage
 import io.ktor.client.plugins.HttpTimeout
 import io.github.jan.supabase.annotations.SupabaseInternal
 import org.koin.dsl.module
@@ -20,6 +21,7 @@ fun createSupabaseClient(supabaseUrl: String, supabaseKey: String): SupabaseClie
         install(Auth)
         install(Realtime)
         install(Functions)
+        install(Storage)
         httpConfig {
             install(HttpTimeout) {
                 requestTimeoutMillis = 15000
@@ -55,6 +57,7 @@ val viewModelModule = module {
     factory { com.argesurec.shared.viewmodel.MilestoneViewModel(get()) }
     factory { com.argesurec.shared.viewmodel.TaskViewModel(get()) }
     factory { com.argesurec.shared.viewmodel.TeamViewModel(get(), get()) }
+    factory { com.argesurec.shared.viewmodel.ProjectFilesViewModel(get()) }
     single { com.argesurec.shared.viewmodel.SettingsViewModel() }
     factory { com.argesurec.shared.viewmodel.ReportsViewModel(get(), get(), get()) }
 }

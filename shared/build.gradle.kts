@@ -57,6 +57,7 @@ kotlin {
             implementation(libs.supabase.auth)
             implementation(libs.supabase.realtime)
             implementation(libs.supabase.functions)
+            implementation(libs.supabase.storage)
             implementation(libs.voyager.navigator)
             implementation(libs.voyager.tab.navigator)
             implementation(libs.voyager.transitions)

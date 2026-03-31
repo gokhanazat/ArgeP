@@ -9,7 +9,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,22 +50,32 @@ class ProjectDetailScreen(private val projectId: String) : Screen {
         val projectsViewModel = koinViewModel<ProjectsViewModel>()
         val milestoneViewModel = koinViewModel<MilestoneViewModel>()
         val teamViewModel = koinViewModel<TeamViewModel>()
+        val projectFilesViewModel = koinViewModel<com.argesurec.shared.viewmodel.ProjectFilesViewModel>()
 
         val projectState by projectsViewModel.state.collectAsState()
         val milestoneState by milestoneViewModel.state.collectAsState()
         val teamState by teamViewModel.state.collectAsState()
+        val filesState by projectFilesViewModel.state.collectAsState()
+        val actionState by projectFilesViewModel.actionState.collectAsState()
+
+        var activeTab by remember { mutableStateOf(0) } // 0: Milestones, 1: Documents
+        
+        val filePicker = com.argesurec.shared.util.rememberFilePicker { file ->
+            file?.let { projectFilesViewModel.uploadFile(projectId, it) }
+        }
 
         LaunchedEffect(projectId) {
             projectsViewModel.loadProjects()
             milestoneViewModel.loadMilestones(projectId)
             teamViewModel.loadTeamForProject(projectId)
+            projectFilesViewModel.loadFiles(projectId)
         }
 
         Scaffold(
             topBar = {
                 TopAppBar(
                     title = {
-                        Column {
+                        Column(modifier = Modifier.clickable { navigator.pop() }) {
                             Text("← Projeler", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
                             val project = (projectState as? UiState.Success<ProjectsData>)?.data?.projects?.find { it.id == projectId }
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -83,12 +98,23 @@ class ProjectDetailScreen(private val projectId: String) : Screen {
                             Text("Düzenle", fontSize = 12.sp)
                         }
                         Spacer(modifier = Modifier.width(8.dp))
-                        Button(
-                            onClick = { /* Milestone Ekle */ },
-                            colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.Navy700),
-                            shape = RoundedCornerShape(7.dp)
-                        ) {
-                            Text("+ Milestone Ekle", fontSize = 12.sp)
+                        
+                        if (activeTab == 0) {
+                            Button(
+                                onClick = { /* Milestone Ekle */ },
+                                colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.Navy700),
+                                shape = RoundedCornerShape(7.dp)
+                            ) {
+                                Text("+ Milestone Ekle", fontSize = 12.sp)
+                            }
+                        } else {
+                            Button(
+                                onClick = { filePicker.launch() },
+                                colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.Phase3),
+                                shape = RoundedCornerShape(7.dp)
+                            ) {
+                                Text("+ Dosya Yükle", fontSize = 12.sp, color = Color.White)
+                            }
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                     },
@@ -117,33 +143,95 @@ class ProjectDetailScreen(private val projectId: String) : Screen {
                 ) {
                     // LEFT COLUMN (Main Content)
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        ProgressOverviewCard(0.45f) // İlerleme hesabı eklenebilir
+                        ProgressOverviewCard(0.45f)
                         
-                        // Milestones Card
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = ArgepColors.White),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                            shape = RoundedCornerShape(10.dp)
+                        // Tabs
+                        TabRow(
+                            selectedTabIndex = activeTab,
+                            containerColor = Color.Transparent,
+                            contentColor = ArgepColors.Navy700,
+                            divider = {},
+                            indicator = { tabPositions ->
+                                TabRowDefaults.SecondaryIndicator(
+                                    Modifier.tabIndicatorOffset(tabPositions[activeTab]),
+                                    color = ArgepColors.Navy700
+                                )
+                            }
                         ) {
-                            Column(modifier = Modifier.padding(20.dp)) {
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                    Text("Milestone'lar", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                                    val count = (milestoneState as? UiState.Success<MilestoneData>)?.data?.milestones?.size ?: 0
-                                    Surface(color = ArgepColors.Navy100, shape = RoundedCornerShape(20.dp)) {
-                                        Text("$count milestone", modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = ArgepColors.Navy700)
+                            Tab(selected = activeTab == 0, onClick = { activeTab = 0 }) {
+                                Text("Milestone'lar", modifier = Modifier.padding(16.dp))
+                            }
+                            Tab(selected = activeTab == 1, onClick = { activeTab = 1 }) {
+                                Text("Dosyalar", modifier = Modifier.padding(16.dp))
+                            }
+                        }
+
+                        if (activeTab == 0) {
+                            // Milestones Card
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = ArgepColors.White),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(20.dp)) {
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                        Text("Milestone'lar", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                                        val count = (milestoneState as? UiState.Success<MilestoneData>)?.data?.milestones?.size ?: 0
+                                        Surface(color = ArgepColors.Navy100, shape = RoundedCornerShape(20.dp)) {
+                                            Text("$count milestone", modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = ArgepColors.Navy700)
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    
+                                    when (val mState = milestoneState) {
+                                        is UiState.Loading -> Box(Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                                        is UiState.Error -> Text(mState.message, color = ArgepColors.Error)
+                                        is UiState.Success<MilestoneData> -> {
+                                            if (mState.data.milestones.isEmpty()) {
+                                                EmptyState("Henüz milestone eklenmedi.")
+                                            } else {
+                                                mState.data.milestones.forEach { milestone ->
+                                                    MilestoneTimelineItem(milestone) {
+                                                        milestone.id?.let { id ->
+                                                            navigator.push(MilestoneDetailScreen(id))
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
-                                Spacer(modifier = Modifier.height(16.dp))
-                                
-                                when (val mState = milestoneState) {
-                                    is UiState.Loading -> Box(Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-                                    is UiState.Error -> Text(mState.message, color = ArgepColors.Error)
-                                    is UiState.Success<MilestoneData> -> {
-                                        mState.data.milestones.forEach { milestone ->
-                                            MilestoneTimelineItem(milestone) {
-                                                milestone.id?.let { id ->
-                                                    navigator.push(MilestoneDetailScreen(id))
+                            }
+                        } else {
+                            // Files Card
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = ArgepColors.White),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(20.dp)) {
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                        Text("Proje Dosyaları", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                                        if (actionState is UiState.Loading) {
+                                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    
+                                    when (val fState = filesState) {
+                                        is UiState.Loading -> Box(Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                                        is UiState.Error -> Text(fState.message, color = ArgepColors.Error)
+                                        is UiState.Success -> {
+                                            val files = fState.data.files
+                                            if (files.isEmpty()) {
+                                                EmptyState("Bu projeye ait dosya bulunamadı.")
+                                            } else {
+                                                files.forEach { file ->
+                                                    ProjectFileItem(file) {
+                                                        projectFilesViewModel.deleteFile(projectId, "projects/$projectId/${file.name}")
+                                                    }
                                                 }
                                             }
                                         }
@@ -182,6 +270,45 @@ class ProjectDetailScreen(private val projectId: String) : Screen {
                         }
                     }
                 }
+            }
+        }
+
+        LaunchedEffect(actionState) {
+            if (actionState is UiState.Success) {
+                // Burada Snackbar tetiklenebilir
+                projectFilesViewModel.clearActionState()
+            }
+        }
+    }
+}
+
+@Composable
+fun ProjectFileItem(file: io.github.jan.supabase.storage.FileObject, onDelete: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .background(ArgepColors.Slate50, RoundedCornerShape(8.dp))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(
+            Icons.Default.Description,
+            contentDescription = null,
+            tint = ArgepColors.Navy600,
+            modifier = Modifier.size(24.dp)
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(file.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = ArgepColors.Navy900)
+            Text("${(file.metadata?.get("size")?.toString()?.toLongOrNull() ?: 0L) / 1024} KB", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            IconButton(onClick = { /* İndirme henüz eklenmedi */ }) {
+                Icon(Icons.Default.FileDownload, contentDescription = "İndir", tint = ArgepColors.Slate600)
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = "Sil", tint = ArgepColors.Error)
             }
         }
     }

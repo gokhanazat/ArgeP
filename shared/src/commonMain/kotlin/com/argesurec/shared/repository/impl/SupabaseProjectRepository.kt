@@ -5,6 +5,7 @@ import com.argesurec.shared.model.ProjectPhase
 import com.argesurec.shared.repository.ProjectRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
@@ -66,5 +67,38 @@ class SupabaseProjectRepository(
             filter { eq("phase", phase.name) }
         }.decodeList<Project>()
         emit(projects)
+    }
+
+    override suspend fun uploadFile(projectId: String, fileName: String, bytes: ByteArray): Result<String> {
+        return try {
+            val bucket = supabase.storage["project-files"]
+            val path = "projects/$projectId/$fileName"
+            bucket.upload(path, bytes) {
+                upsert = true
+            }
+            Result.success(path)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getFiles(projectId: String): Result<List<io.github.jan.supabase.storage.FileObject>> {
+        return try {
+            val bucket = supabase.storage["project-files"]
+            val files = bucket.list("projects/$projectId")
+            Result.success(files)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteFile(path: String): Result<Unit> {
+        return try {
+            val bucket = supabase.storage["project-files"]
+            bucket.delete(path)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }
