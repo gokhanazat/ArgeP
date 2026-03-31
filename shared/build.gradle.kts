@@ -119,6 +119,6 @@ tasks.register("injectWasmEnv") {
 }
 
 // Her derlemeden önce enjeksiyonu yap
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile>().configureEach {
+tasks.named("compileKotlinWasmJs") {
     dependsOn("injectWasmEnv")
 }
