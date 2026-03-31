@@ -51,6 +51,7 @@ class ProjectDetailScreen(private val projectId: String) : Screen {
         val teamState by teamViewModel.state.collectAsState()
 
         LaunchedEffect(projectId) {
+            projectsViewModel.loadProjects()
             milestoneViewModel.loadMilestones(projectId)
             teamViewModel.loadTeamForProject(projectId)
         }
