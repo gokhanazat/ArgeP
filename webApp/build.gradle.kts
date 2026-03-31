@@ -7,6 +7,7 @@ plugins {
 }
 
 kotlin {
+    jvmToolchain(17)
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         moduleName = "webApp"
