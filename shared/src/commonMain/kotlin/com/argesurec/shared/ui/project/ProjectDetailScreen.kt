@@ -581,6 +581,7 @@ fun InfoPanel(
                 com.argesurec.shared.ui.team.InviteMemberDialog(
                     onDismiss = { showInviteDialog = false },
                     onInvite = { email, role ->
+                        println("DIAGNOSTIC: onInvite triggered in UI with email: $email")
                         teamViewModel.inviteMember(email, role, project.id!!)
                         showInviteDialog = false
                     }
