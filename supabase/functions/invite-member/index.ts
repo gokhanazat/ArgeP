@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,76 +12,52 @@ serve(async (req) => {
   }
 
   try {
-    // Service role ile çalış → auth.users'a erişebiliriz
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } }
     )
 
-    // İsteği yapan kullanıcıyı doğrula
-    const authHeader = req.headers.get('Authorization')!
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user: requester }, error: authError } = await supabaseAdmin.auth.getUser(token)
-    if (authError || !requester) {
-      throw new Error('Unauthorized: Kullanıcı doğrulanamadı.')
+    const { email, projectId, role } = await req.json()
+
+    if (!email || !projectId) {
+      throw new Error('E-posta ve Proje ID gereklidir.')
     }
 
-    const { email: inputEmail, projectId, role } = await req.json()
-    const email = inputEmail?.trim()?.toLowerCase()
-    if (!email || !projectId || !role) {
-      throw new Error('Eksik parametre: email, projectId ve role zorunludur.')
-    }
+    console.log(`[invite-member] Attempting atomic add for ${email} in project ${projectId} (role: ${role})`)
 
-    console.log(`[invite-member] ${requester.email} → ${email} (project: ${projectId}, role: ${role})`)
-
-    console.log(`[invite-member] Searching user for: ${email}`)
-    
-    let userId: string
-
-    // 1. E-posta ile kullanıcı UUID'sini güvenli RPC üzerinden bul
-    const { data: foundUserId, error: rpcError } = await supabaseAdmin.rpc('get_user_id_by_email', { 
-        p_email: email 
+    // ATOMİK SQL FONKSİYONUNU ÇAĞIR
+    const { data: result, error: rpcError } = await supabaseAdmin.rpc('add_team_member_by_email', { 
+        p_email: email.trim().toLowerCase(),
+        p_project_id: projectId,
+        p_role: role || 'GOZLEMCI'
     })
-    
-    if (rpcError || !foundUserId) {
-      console.log(`[invite-member] User NOT FOUND or RPC Error: ${rpcError?.message || 'Empty response'}`)
-      return new Response(JSON.stringify({
-        success: false,
-        error: `${email} sistemde bulunamadı. Lütfen kullanıcının önce uygulamaya kayıt olduğundan emin olun.`
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 })
+
+    if (rpcError) {
+      console.error(`[invite-member] RPC Error: ${rpcError.message}`)
+      throw new Error(`Veritabanı erişim hatası: ${rpcError.message}`)
     }
 
-    userId = foundUserId
-    console.log(`[invite-member] Found user UUID: ${userId}`)
-
-    // 2. Doğrudan team_members'a ekle
-    const { error: teamError } = await supabaseAdmin
-      .from('team_members')
-      .upsert({
-        user_id: userId,
-        project_id: projectId,
-        role: role
-      }, { onConflict: 'user_id, project_id' })
-
-    if (teamError) {
-      console.error(`[invite-member] team_members WRITE FAIL: ${teamError.message}`)
-      throw new Error(`Veritabanına yazılamadı: ${teamError.message}`)
+    // RPC sonucunu direkt dön (success: true/false ve error mesajı zaten içinde)
+    if (!result || !result.success) {
+      console.warn(`[invite-member] RPC returned failure: ${result?.error || 'Unknown error'}`)
+      return new Response(JSON.stringify(result || { success: false, error: 'Bilinmeyen hata' }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 200 // Hata mesajını UI'a 200 ile dönüyoruz ki Result.success(false) olarak yakalansın
+      })
     }
 
-    console.log(`[invite-member] SUCCESS: ${userId} added to ${projectId}`)
-
-    return new Response(JSON.stringify({
-      success: true,
-      status: 'added',
-      userId,
-      invitedEmail: email
-    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
+    console.log(`[invite-member] Successfully added/updated member: ${email}`)
+    return new Response(JSON.stringify(result), { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+      status: 200 
+    })
 
   } catch (error: any) {
-    console.error('[invite-member] ERROR:', error.message)
-    return new Response(JSON.stringify({
-      success: false,
-      error: error.message
-    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 })
+    console.error(`[invite-member] Global Catch: ${error.message}`)
+    return new Response(JSON.stringify({ success: false, error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 400
+    })
   }
 })
