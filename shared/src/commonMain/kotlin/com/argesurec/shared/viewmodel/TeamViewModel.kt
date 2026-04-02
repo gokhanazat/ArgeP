@@ -92,15 +92,17 @@ class TeamViewModel(
                     return@launch
                 }
 
-                // Edge Function: e-postayı bul → team_members'a doğrudan yaz (davet değil!)
-                val response = supabase.functions.invoke(
-                    function = "invite-member",
-                    body = buildJsonObject {
-                        put("email", email)
-                        put("projectId", projectId)
-                        put("role", role)
-                    }
-                )
+                // Edge Function çağrısını 15 saniye ile sınırla
+                val response = kotlinx.coroutines.withTimeout(15000) {
+                    supabase.functions.invoke(
+                        function = "invite-member",
+                        body = buildJsonObject {
+                            put("email", email)
+                            put("projectId", projectId)
+                            put("role", role)
+                        }
+                    )
+                }
 
                 val responseBody = response.bodyAsText()
                 val status = response.status.value
