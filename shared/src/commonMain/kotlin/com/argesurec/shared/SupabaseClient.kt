@@ -59,9 +59,9 @@ val viewModelModule = module {
     single { com.argesurec.shared.viewmodel.ProjectsViewModel(get(), get()) }
     factory { com.argesurec.shared.viewmodel.MilestoneViewModel(get()) }
     factory { com.argesurec.shared.viewmodel.TaskViewModel(get(), get()) }
-    factory { com.argesurec.shared.viewmodel.TeamViewModel(get(), get()) }
+    single { com.argesurec.shared.viewmodel.TeamViewModel(get(), get()) }
     factory { com.argesurec.shared.viewmodel.ProjectFilesViewModel(get()) }
-    factory { com.argesurec.shared.viewmodel.ExpenseViewModel(get(), get()) }
+    single { com.argesurec.shared.viewmodel.ExpenseViewModel(get(), get()) }
     single { com.argesurec.shared.viewmodel.SettingsViewModel() }
     factory { com.argesurec.shared.viewmodel.ReportsViewModel(get(), get(), get(), get()) }
 }
