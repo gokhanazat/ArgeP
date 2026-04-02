@@ -167,7 +167,7 @@ class TeamScreen(private val projectId: String?) : Screen {
                                     Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
                                 }
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Ekibe Ekle", style = MaterialTheme.typography.labelLarge)
+                                Text("Yeni Üye Ekle", style = MaterialTheme.typography.labelLarge)
                             }
                         }
 
@@ -334,7 +334,7 @@ fun InviteMemberDialog(
                 shape = RoundedCornerShape(10.dp),
                 enabled = email.isNotEmpty()
             ) {
-                Text("Davet Gönder")
+                Text("Ekle")
             }
         },
         dismissButton = {

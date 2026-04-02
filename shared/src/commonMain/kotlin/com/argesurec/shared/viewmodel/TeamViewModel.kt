@@ -7,15 +7,24 @@ import com.argesurec.shared.repository.TeamRepository
 import com.argesurec.shared.util.UiState
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.functions.functions
+import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 data class TeamData(
     val members: List<TeamMemberWithProfile> = emptyList()
+)
+
+@kotlinx.serialization.Serializable
+data class InviteResponse(
+    val success: Boolean = false,
+    val status: String = "",
+    val error: String? = null
 )
 
 class TeamViewModel(
@@ -26,7 +35,6 @@ class TeamViewModel(
     private val _state = MutableStateFlow<UiState<TeamData>>(UiState.Loading)
     val state: StateFlow<UiState<TeamData>> = _state.asStateFlow()
 
-    /** Sadece davet/üye ekleme işlemi sırasında dönen spinner için */
     private val _isActionLoading = MutableStateFlow(false)
     val isActionLoading: StateFlow<Boolean> = _isActionLoading.asStateFlow()
 
@@ -34,6 +42,11 @@ class TeamViewModel(
     val actionMessage: StateFlow<String?> = _actionMessage.asStateFlow()
 
     fun clearActionMessage() { _actionMessage.value = null }
+
+    // debugInfo artık kullanılmıyor ama derleme hatası çıkmaması için tutuyoruz
+    private val _debugInfo = MutableStateFlow<String?>(null)
+    val debugInfo: StateFlow<String?> = _debugInfo.asStateFlow()
+    fun clearDebugInfo() { _debugInfo.value = null }
 
     private var currentProjectId: String? = null
 
@@ -72,22 +85,40 @@ class TeamViewModel(
         viewModelScope.launch {
             _isActionLoading.value = true
             try {
-                // Proje ID kontrolü: Eğer bir projenin içinde değilsek davet gönderilmesini engelle
                 if (projectId == "global" || projectId.isEmpty()) {
-                    _actionMessage.emit("Lütfen önce projenin içine girip oradan davet gönderin.")
+                    _actionMessage.emit("Lütfen önce projenin içine girip oradan ekleyin.")
                     return@launch
                 }
 
-                // Edge Function: /functions/v1/invite-member
-                supabase.functions.invoke("invite-member", buildJsonObject {
-                    put("email", email)
-                    put("projectId", projectId)
-                    put("role", role)
-                })
-                _actionMessage.emit("Davet başarıyla gönderildi.")
-                loadTeamForProject(projectId)
+                // Edge Function: e-postayı bul → team_members'a doğrudan yaz (davet değil!)
+                val response = supabase.functions.invoke(
+                    function = "invite-member",
+                    body = buildJsonObject {
+                        put("email", email)
+                        put("projectId", projectId)
+                        put("role", role)
+                    }
+                )
+
+                val responseBody = response.bodyAsText()
+                val status = response.status.value
+
+                val result = try {
+                    Json { ignoreUnknownKeys = true }.decodeFromString<InviteResponse>(responseBody)
+                } catch (parseEx: Exception) {
+                    // JSON parse edilemiyorsa ham body'yi göster
+                    _actionMessage.emit("Sunucu yanıtı: $responseBody")
+                    return@launch
+                }
+
+                if (result.success) {
+                    _actionMessage.emit("Üye başarıyla eklendi.")
+                    loadTeamForProject(projectId)
+                } else {
+                    _actionMessage.emit(result.error ?: "Hata (HTTP $status)")
+                }
             } catch (e: Exception) {
-                _actionMessage.emit(e.message ?: "Davet gönderilemedi.")
+                _actionMessage.emit(e.message ?: "Bağlantı Hatası")
             } finally {
                 _isActionLoading.value = false
             }

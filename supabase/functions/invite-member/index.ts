@@ -12,89 +12,76 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
+    // Service role ile çalış → auth.users'a erişebiliriz
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Token ve kullanıcıyı al
+    // İsteği yapan kullanıcıyı doğrula
     const authHeader = req.headers.get('Authorization')!
     const token = authHeader.replace('Bearer ', '')
-    const { data: { user: requester }, error: authError } = await supabaseClient.auth.getUser(token)
-
-    if (authError || !requester) throw new Error('Unauthorized')
-
-    const { email, projectId, role } = await req.json()
-    const isGlobalInvite = !projectId || projectId === 'global'
-    const finalProjectId = isGlobalInvite ? null : projectId
-
-    // 1. Yetki Kontrolü
-    console.log(`Checking permission for user: ${requester.id} on project: ${projectId}`)
-    
-    // Admin mi?
-    const { data: profile } = await supabaseClient
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', requester.id)
-      .single()
-
-    const isAdmin = profile?.is_admin === true
-
-    if (!isAdmin) {
-      if (isGlobalInvite) {
-        return new Response(JSON.stringify({ error: 'Global davet yetkiniz yok. Sadece Adminler kişi ekleyebilir.' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 403,
-        })
-      }
-
-      // Proje bazlı PM kontrolü
-      const { data: isManager } = await supabaseClient.rpc('is_project_manager', { 
-        p_project_id: projectId, 
-        p_user_id: requester.id 
-      })
-
-      if (!isManager) {
-        return new Response(JSON.stringify({ error: 'Bu işlem için yetkiniz yok (PM veya Admin olmalısınız).' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 403,
-        })
-      }
+    const { data: { user: requester }, error: authError } = await supabaseAdmin.auth.getUser(token)
+    if (authError || !requester) {
+      throw new Error('Unauthorized: Kullanıcı doğrulanamadı.')
     }
 
-    // 2. Invitations tablosuna kayıt at
-    const { error: inviteDbError } = await supabaseClient
-      .from('invitations')
-      .insert({
-        email,
-        project_id: finalProjectId,
-        role,
-        invited_by: requester.id
-      })
+    const { email: inputEmail, projectId, role } = await req.json()
+    const email = inputEmail?.trim()?.toLowerCase()
+    if (!email || !projectId || !role) {
+      throw new Error('Eksik parametre: email, projectId ve role zorunludur.')
+    }
 
-    if (inviteDbError) throw inviteDbError
+    console.log(`[invite-member] ${requester.email} → ${email} (project: ${projectId}, role: ${role})`)
 
-    // 3. Supabase Auth ile davet gönder
-    const { error: authInviteError } = await supabaseClient.auth.admin.inviteUserByEmail(email, {
-        data: { 
-            invited_by: requester.id,
-            project_id: finalProjectId,
-            target_role: role
-        }
+    console.log(`[invite-member] Searching user for: ${email}`)
+    
+    let userId: string
+
+    // 1. E-posta ile kullanıcı UUID'sini güvenli RPC üzerinden bul
+    const { data: foundUserId, error: rpcError } = await supabaseAdmin.rpc('get_user_id_by_email', { 
+        p_email: email 
     })
+    
+    if (rpcError || !foundUserId) {
+      console.log(`[invite-member] User NOT FOUND or RPC Error: ${rpcError?.message || 'Empty response'}`)
+      return new Response(JSON.stringify({
+        success: false,
+        error: `${email} sistemde bulunamadı. Lütfen kullanıcının önce uygulamaya kayıt olduğundan emin olun.`
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 })
+    }
 
-    if (authInviteError) throw authInviteError
+    userId = foundUserId
+    console.log(`[invite-member] Found user UUID: ${userId}`)
 
-    return new Response(JSON.stringify({ success: true, invitedEmail: email }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    })
+    // 2. Doğrudan team_members'a ekle
+    const { error: teamError } = await supabaseAdmin
+      .from('team_members')
+      .upsert({
+        user_id: userId,
+        project_id: projectId,
+        role: role
+      }, { onConflict: 'user_id, project_id' })
+
+    if (teamError) {
+      console.error(`[invite-member] team_members WRITE FAIL: ${teamError.message}`)
+      throw new Error(`Veritabanına yazılamadı: ${teamError.message}`)
+    }
+
+    console.log(`[invite-member] SUCCESS: ${userId} added to ${projectId}`)
+
+    return new Response(JSON.stringify({
+      success: true,
+      status: 'added',
+      userId,
+      invitedEmail: email
+    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
 
   } catch (error: any) {
-    console.error('Error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
-    })
+    console.error('[invite-member] ERROR:', error.message)
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message
+    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 })
   }
 })
