@@ -18,13 +18,20 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     )
 
-    const { email, projectId, role } = await req.json()
-
-    if (!email || !projectId) {
-      throw new Error('E-posta ve Proje ID gereklidir.')
+    let body
+    try {
+      body = await req.json()
+    } catch (e) {
+      throw new Error(`JSON ayrıştırma hatası (Gelen veri bozuk): ${e.message}`)
     }
 
-    console.log(`[invite-member] Attempting atomic add for ${email} in project ${projectId} (role: ${role})`)
+    const { email, projectId, role } = body
+
+    if (!email || !projectId) {
+      throw new Error(`E-posta (${email}) veya Proje ID (${projectId}) gelmedi!`)
+    }
+
+    console.log(`[invite-member] Gelen veriler -> E-posta: ${email}, Proje: ${projectId}, Rol: ${role}`)
 
     // ATOMİK SQL FONKSİYONUNU ÇAĞIR
     const { data: result, error: rpcError } = await supabaseAdmin.rpc('add_team_member_by_email', { 
@@ -34,30 +41,37 @@ serve(async (req) => {
     })
 
     if (rpcError) {
-      console.error(`[invite-member] RPC Error: ${rpcError.message}`)
-      throw new Error(`Veritabanı erişim hatası: ${rpcError.message}`)
-    }
-
-    // RPC sonucunu direkt dön (success: true/false ve error mesajı zaten içinde)
-    if (!result || !result.success) {
-      console.warn(`[invite-member] RPC returned failure: ${result?.error || 'Unknown error'}`)
-      return new Response(JSON.stringify(result || { success: false, error: 'Bilinmeyen hata' }), { 
+      console.error(`[invite-member] RPC Hatası: ${rpcError.message}`)
+      // RPC Hatasını UI'a açıkça dönüyoruz
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: `SQL Hatası: ${rpcError.message}. Lütfen v11 SQL'in yüklü olduğundan emin olun.` 
+      }), { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-        status: 200 // Hata mesajını UI'a 200 ile dönüyoruz ki Result.success(false) olarak yakalansın
+        status: 200 
       })
     }
 
-    console.log(`[invite-member] Successfully added/updated member: ${email}`)
+    if (!result || !result.success) {
+      const errorMsg = result?.error || 'Bilinmeyen SQL Hatası'
+      console.warn(`[invite-member] RPC başarısız: ${errorMsg}`)
+      return new Response(JSON.stringify({ success: false, error: errorMsg }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 200 
+      })
+    }
+
+    console.log(`[invite-member] Başarılı: ${email} eklendi.`)
     return new Response(JSON.stringify(result), { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
       status: 200 
     })
 
   } catch (error: any) {
-    console.error(`[invite-member] Global Catch: ${error.message}`)
+    console.error(`[invite-member] Global Hata: ${error.message}`)
     return new Response(JSON.stringify({ success: false, error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400
+      status: 200 // Hata mesajlarını 200 ile dönerek snackbar'da gösterilmesini sağlıyoruz
     })
   }
 })
