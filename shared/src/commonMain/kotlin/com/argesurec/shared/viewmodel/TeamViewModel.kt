@@ -39,7 +39,7 @@ class TeamViewModel(
     val isActionLoading: StateFlow<Boolean> = _isActionLoading.asStateFlow()
 
     private val _actionMessage = MutableStateFlow<String?>(null)
-    val actionMessage: StateFlow<String?> = _actionMessage.asStateFlow()
+    val actionMessage = _actionMessage.asStateFlow()
 
     fun clearActionMessage() { _actionMessage.value = null }
 
@@ -83,11 +83,11 @@ class TeamViewModel(
 
     fun inviteMember(email: String, role: String, projectId: String) {
         viewModelScope.launch {
-            _actionMessage.emit("🔍 İşlem başlatılıyor...")
+            _actionMessage.value = "🔍 İşlem başlatılıyor..."
             _isActionLoading.value = true
             try {
                 if (projectId == "global" || projectId.isEmpty()) {
-                    _actionMessage.emit("Lütfen önce projenin içine girip oradan ekleyin.")
+                    _actionMessage.value = "Lütfen önce projenin içine girip oradan ekleyin."
                     return@launch
                 }
 
@@ -110,20 +110,20 @@ class TeamViewModel(
                     Json { ignoreUnknownKeys = true }.decodeFromString<InviteResponse>(responseBody)
                 } catch (parseEx: Exception) {
                     // JSON parse edilemiyorsa ham body'yi göster
-                    _actionMessage.emit("Sunucu yanıtı: $responseBody")
+                    _actionMessage.value = "Sunucu yanıtı: $responseBody"
                     return@launch
                 }
 
                 if (result.success) {
-                    _actionMessage.emit("Üye başarıyla eklendi.")
+                    _actionMessage.value = "Üye başarıyla eklendi!"
                     loadTeamForProject(projectId)
                 } else {
-                    _actionMessage.emit(result.error ?: "Hata (HTTP $status)")
+                    _actionMessage.value = result.error ?: "Hata (HTTP $status)"
                 }
             } catch (e: Exception) {
                 val errorMsg = "Hata: ${e::class.simpleName} - ${e.message ?: "Bağlantı kesildi/Zaman aşımı"}"
                 println("Diagnostic Error: $errorMsg")
-                _actionMessage.emit(errorMsg)
+                _actionMessage.value = errorMsg
             } finally {
                 _isActionLoading.value = false
             }
