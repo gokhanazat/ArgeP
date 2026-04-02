@@ -83,6 +83,7 @@ class TeamViewModel(
 
     fun inviteMember(email: String, role: String, projectId: String) {
         viewModelScope.launch {
+            _actionMessage.emit("🔍 İşlem başlatılıyor...")
             _isActionLoading.value = true
             try {
                 if (projectId == "global" || projectId.isEmpty()) {
@@ -120,7 +121,9 @@ class TeamViewModel(
                     _actionMessage.emit(result.error ?: "Hata (HTTP $status)")
                 }
             } catch (e: Exception) {
-                _actionMessage.emit("Hata: ${e::class.simpleName} - ${e.message ?: "Detay Yok"}")
+                val errorMsg = "Hata: ${e::class.simpleName} - ${e.message ?: "Bağlantı kesildi/Zaman aşımı"}"
+                println("Diagnostic Error: $errorMsg")
+                _actionMessage.emit(errorMsg)
             } finally {
                 _isActionLoading.value = false
             }
