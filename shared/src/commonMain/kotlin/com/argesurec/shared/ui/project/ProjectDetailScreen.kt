@@ -595,7 +595,10 @@ fun InfoPanel(
                 ) {
                     Text("Proje Ekibi", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     IconButton(
-                        onClick = { showInviteDialog = true },
+                        onClick = { 
+                            println("DIAGNOSTIC: Invite Member Button Clicked!")
+                            showInviteDialog = true 
+                        },
                         modifier = Modifier.size(32.dp).background(ArgepColors.Navy700, CircleShape)
                     ) {
                         Icon(Icons.Default.Add, null, tint = Color.White, modifier = Modifier.size(16.dp))
