@@ -101,7 +101,7 @@ class TeamScreen(private val projectId: String?) : Screen {
                 TopAppBar(
                     title = {
                         Column {
-                            Text("Ekip Yönetimi", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = ArgepColors.Navy900)
+                            Text("Ekip Yönetimi (v1.1 - Atomic)", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = ArgepColors.Navy900)
                             Text(if (projectId != null) "Projeye Dahil Üyeler" else "Tüm Ekip Üyeleri", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
                         }
                     },
