@@ -6,6 +6,7 @@ import com.argesurec.shared.model.Task
 import com.argesurec.shared.model.TaskPriority
 import com.argesurec.shared.model.TaskStatus
 import com.argesurec.shared.repository.TaskRepository
+import com.argesurec.shared.repository.MilestoneRepository
 import com.argesurec.shared.util.UiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +23,8 @@ data class TaskData(
 )
 
 class TaskViewModel(
-    private val repository: TaskRepository
+    private val repository: TaskRepository,
+    private val milestoneRepository: MilestoneRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<UiState<TaskData>>(UiState.Loading)
@@ -116,6 +118,18 @@ class TaskViewModel(
         }
     }
 
+    fun updateTaskAssignment(taskId: String, userId: String?, onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            val task = repository.getById(taskId) ?: return@launch
+            val updatedTask = task.copy(assignedTo = userId)
+            val result = repository.update(updatedTask)
+            if (result.isSuccess) {
+                loadTaskDetail(taskId)
+                onComplete()
+            }
+        }
+    }
+
     fun loadTaskDetail(taskId: String) {
         viewModelScope.launch {
             _detailState.emit(UiState.Loading)
@@ -126,6 +140,10 @@ class TaskViewModel(
                 _detailState.emit(UiState.Error("Görev bulunamadı."))
             }
         }
+    }
+
+    suspend fun getProjectIdForTask(milestoneId: String): String? {
+        return milestoneRepository.getById(milestoneId)?.projectId
     }
 
     fun deleteTask(taskId: String, onDeleted: () -> Unit) {

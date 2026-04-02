@@ -27,7 +27,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import org.koin.compose.viewmodel.koinViewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.argesurec.shared.model.Project
+import com.argesurec.shared.model.*
 import com.argesurec.shared.ui.components.EmptyState
 import com.argesurec.shared.ui.components.ErrorScreen
 import com.argesurec.shared.ui.components.LoadingScreen
@@ -100,12 +100,12 @@ class ProjectsScreen : Screen {
                         val filteredProjects = if (selectedFilter == "Tümü") {
                             allProjects
                         } else {
-                            allProjects.filter { project ->
+                            allProjects.filter { projectWithTeam ->
+                                val project = projectWithTeam.toProject()
                                 val enumName = when (project.phase) {
                                     com.argesurec.shared.model.ProjectPhase.INCUBATION -> "Kuluçka"
                                     com.argesurec.shared.model.ProjectPhase.DEVELOPMENT -> "Geliştirme"
                                     com.argesurec.shared.model.ProjectPhase.COMMERCIALIZATION -> "Ticarileşme"
-                                    null -> "Belirsiz"
                                 }
                                 enumName == selectedFilter
                             }
@@ -167,7 +167,8 @@ fun FilterChips(filters: List<String>, selected: String, onSelect: (String) -> U
 }
 
 @Composable
-fun PremiumProjectCard(project: Project, onClick: () -> Unit) {
+fun PremiumProjectCard(projectWithTeam: ProjectWithTeam, onClick: () -> Unit) {
+    val project = projectWithTeam.toProject()
     val phaseName = when (project.phase) {
         com.argesurec.shared.model.ProjectPhase.INCUBATION -> "Kuluçka"
         com.argesurec.shared.model.ProjectPhase.DEVELOPMENT -> "Geliştirme"
@@ -231,11 +232,48 @@ fun PremiumProjectCard(project: Project, onClick: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
             
             // Budget Summary
-            Row(modifier = Modifier.fillMaxWidth().background(ArgepColors.Slate50, RoundedCornerShape(8.dp)).padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(modifier = Modifier.fillMaxWidth().background(ArgepColors.Slate50, RoundedCornerShape(8.dp)).padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
                     Text("BÜTÇE", style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold), color = ArgepColors.Slate400)
                     Text("${project.budgetTotal ?: 0.0} ₺", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = ArgepColors.Navy800)
                 }
+                
+                // Team Avatars
+                Row(horizontalArrangement = Arrangement.spacedBy((-8).dp), verticalAlignment = Alignment.CenterVertically) {
+                    projectWithTeam.members.take(3).forEach { member ->
+                        Surface(
+                            modifier = Modifier.size(24.dp),
+                            shape = CircleShape,
+                            color = ArgepColors.Slate200,
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, Color.White)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    (member.profile?.fullName ?: "?").take(1).uppercase(),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                                    color = ArgepColors.Slate600
+                                )
+                            }
+                        }
+                    }
+                    if (projectWithTeam.members.size > 3) {
+                        Surface(
+                            modifier = Modifier.size(24.dp),
+                            shape = CircleShape,
+                            color = ArgepColors.Navy700,
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, Color.White)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    "+${projectWithTeam.members.size - 3}",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
+                }
+
                 Column(horizontalAlignment = Alignment.End) {
                     Text("HARCANAN", style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold), color = ArgepColors.Slate400)
                     Text("${project.budgetSpent ?: 0.0} ₺", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = ArgepColors.Navy800)

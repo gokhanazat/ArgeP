@@ -25,6 +25,11 @@ enum class TaskStatus {
 }
 
 @Serializable
+data class ProjectIdOnly(
+    @SerialName("id") val id: String
+)
+
+@Serializable
 data class Project(
     @SerialName("id") val id: String? = null,
     @SerialName("name") val name: String,
@@ -100,4 +105,34 @@ data class TeamMemberWithProfile(
     @SerialName("role") val role: String? = null,
     @SerialName("joined_at") val joinedAt: String,
     @SerialName("profiles") val profile: UserProfile? = null
+)
+
+@Serializable
+data class ProjectWithTeam(
+    @SerialName("id") val id: String? = null,
+    @SerialName("name") val name: String,
+    @SerialName("description") val description: String? = null,
+    @SerialName("phase") val phase: ProjectPhase,
+    @SerialName("status") val status: String? = null,
+    @SerialName("owner_id") val ownerId: String,
+    @SerialName("budget_total") val budgetTotal: Double? = 0.0,
+    @SerialName("budget_spent") val budgetSpent: Double? = 0.0,
+    @SerialName("start_date") val startDate: String? = null,
+    @SerialName("end_date") val endDate: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("team_members") val members: List<TeamMemberWithProfile> = emptyList()
+)
+
+fun ProjectWithTeam.toProject() = Project(
+    id = id,
+    name = name,
+    description = description,
+    phase = phase,
+    status = status,
+    ownerId = ownerId,
+    budgetTotal = budgetTotal,
+    budgetSpent = budgetSpent,
+    startDate = startDate,
+    endDate = endDate,
+    createdAt = createdAt
 )

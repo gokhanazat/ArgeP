@@ -1,0 +1,6 @@
+- [x] TaskViewModel'a MilestoneRepository enjeksiyonu ve getProjectIdForTask metodu eklenmesi
+- [x] SupabaseClient'da TaskViewModel factory güncellemesi
+- [x] TaskDetailScreen'de dinamik ekip yükleme mantığının kurulması
+- [/] Build hatalarının giderilmesi (SupabaseTeamRepository ve TaskDetailScreen)
+- [ ] Uygulama derlemesi ve doğrulama (Android Debug)
+- [ ] Walkthrough oluşturulması

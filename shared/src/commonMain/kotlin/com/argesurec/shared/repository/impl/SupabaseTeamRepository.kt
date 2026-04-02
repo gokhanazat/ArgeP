@@ -6,12 +6,18 @@ import com.argesurec.shared.repository.TeamRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.functions.Functions
+import io.github.jan.supabase.functions.functions
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonObject
 
 class SupabaseTeamRepository(
     private val supabase: SupabaseClient
@@ -23,27 +29,19 @@ class SupabaseTeamRepository(
     }
 
     override fun getAllWithProfiles(): Flow<List<TeamMemberWithProfile>> = flow {
-        try {
-            val members = supabase.from("team_members")
-                .select(columns = Columns.raw("*, profiles(*)"))
-                .decodeList<TeamMemberWithProfile>()
-            emit(members)
-        } catch (e: Exception) {
-            emit(emptyList())
-        }
+        val members = supabase.from("team_members")
+            .select(columns = Columns.raw("*, profiles(*)"))
+            .decodeList<TeamMemberWithProfile>()
+        emit(members)
     }
 
     override fun getByProjectWithProfiles(projectId: String): Flow<List<TeamMemberWithProfile>> = flow {
-        try {
-            val members = supabase.from("team_members")
-                .select(columns = Columns.raw("*, profiles(*)")) {
-                    filter { eq("project_id", projectId) }
-                }
-                .decodeList<TeamMemberWithProfile>()
-            emit(members)
-        } catch (e: Exception) {
-            emit(emptyList())
-        }
+        val members = supabase.from("team_members")
+            .select(columns = Columns.raw("*, profiles(*)")) {
+                filter { eq("project_id", projectId) }
+            }
+            .decodeList<TeamMemberWithProfile>()
+        emit(members)
     }
 
     override suspend fun getById(id: String): TeamMember? {
@@ -68,7 +66,7 @@ class SupabaseTeamRepository(
     override suspend fun update(item: TeamMember): Result<TeamMember> = try {
         val updated = supabase.from("team_members").update(item) {
             select()
-            filter { eq("id", item.id) }
+            filter { eq("id", item.id!!) }
         }.decodeSingle<TeamMember>()
         Result.success(updated)
     } catch (e: Exception) {
@@ -85,26 +83,32 @@ class SupabaseTeamRepository(
     }
 
     override suspend fun inviteMember(email: String, role: String): Result<Unit> = try {
-        // Invite logic handled by Edge Function or Admin API
         Result.success(Unit)
     } catch (e: Exception) {
         Result.failure(e)
     }
 
-    override fun getRoleInProject(userId: String, projectId: String): Flow<String?> = flow {
-        try {
-            val response = supabase.from("team_members")
-                .select(columns = Columns.raw("role")) {
-                    filter {
-                        eq("user_id", userId)
-                        eq("project_id", projectId)
-                    }
+    suspend fun inviteToProject(email: String, role: String, projectId: String): Result<Unit> = try {
+        supabase.functions.invoke("invite-member", buildJsonObject {
+            put("email", email)
+            put("projectId", projectId)
+            put("role", role)
+        })
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    override fun getRoleInProject(userId: String, projectId: String): Flow<String?> = flow<String?> {
+        val response = supabase.from("team_members")
+            .select(columns = Columns.raw("role")) {
+                filter {
+                    eq("user_id", userId)
+                    eq("project_id", projectId)
                 }
-            val role = response.decodeAs<List<Map<String, String>>>()
-                .firstOrNull()?.get("role")
-            emit(role)
-        } catch (e: Exception) {
-            emit(null)
-        }
+            }
+        val roles = response.decodeAs<List<Map<String, String>>>()
+        val role = roles.firstOrNull()?.get("role")
+        emit(role)
     }
 }

@@ -8,8 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,17 +27,35 @@ import com.argesurec.shared.model.TaskStatus
 import com.argesurec.shared.ui.theme.ArgepColors
 import com.argesurec.shared.util.UiState
 import com.argesurec.shared.viewmodel.TaskViewModel
+import com.argesurec.shared.viewmodel.TeamViewModel
+import com.argesurec.shared.viewmodel.TeamData
+import com.argesurec.shared.model.TeamMemberWithProfile
 
 class TaskDetailScreen(private val taskId: String) : Screen {
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = koinViewModel<TaskViewModel>()
-        val state by viewModel.state.collectAsState()
+        val teamViewModel = koinViewModel<TeamViewModel>()
+        
+        val state by viewModel.detailState.collectAsState()
+        val teamState by teamViewModel.state.collectAsState()
 
-        val task = (state as? UiState.Success)?.data?.tasks?.find { it.id == taskId }
+        val task = (state as? UiState.Success)?.data
+        var showAssignDropdown by remember { mutableStateOf(false) }
 
+        LaunchedEffect(taskId) {
+            viewModel.loadTaskDetail(taskId)
+        }
+
+        // Fetch true projectId and then load team members
+        LaunchedEffect(task?.milestoneId) {
+            val milestoneId = task?.milestoneId ?: return@LaunchedEffect
+            val proId = viewModel.getProjectIdForTask(milestoneId)
+            proId?.let { teamViewModel.loadTeamForProject(it) }
+        }
+
+        @OptIn(ExperimentalMaterial3Api::class)
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -97,22 +114,81 @@ class TaskDetailScreen(private val taskId: String) : Screen {
 
                     // RIGHT COLUMN (Meta Panel)
                     Column(modifier = Modifier.width(320.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        InfoCard("Görev Detayları") {
-                            DetailRow("Atanan", {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Surface(modifier = Modifier.size(24.dp), color = ArgepColors.Navy600, shape = CircleShape) {
-                                        Box(contentAlignment = Alignment.Center) { Text("A", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold) }
+                        TaskInfoCard("Görev Detayları") {
+                            TaskDetailRow("Atanan", {
+                                val assignedMember = (teamState as? UiState.Success)?.data?.members?.find { it.userId == task.assignedTo }
+                                
+                                Box {
+                                    Row(
+                                        modifier = Modifier.clickable { showAssignDropdown = true },
+                                        verticalAlignment = Alignment.CenterVertically, 
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Surface(modifier = Modifier.size(24.dp), color = ArgepColors.Navy600, shape = CircleShape) {
+                                            Box(contentAlignment = Alignment.Center) { 
+                                                Text(assignedMember?.profile?.fullName?.take(1) ?: "?", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold) 
+                                            }
+                                        }
+                                        Text(assignedMember?.profile?.fullName ?: "Atanmamış", style = MaterialTheme.typography.bodyMedium)
+                                        Icon(Icons.Default.ArrowDropDown, null, modifier = Modifier.size(16.dp))
                                     }
-                                    Text("Ali Veli", style = MaterialTheme.typography.bodyMedium)
+
+                                    DropdownMenu(
+                                        expanded = showAssignDropdown,
+                                        onDismissRequest = { showAssignDropdown = false }
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("Atamayı Kaldır") },
+                                            onClick = {
+                                                viewModel.updateTaskAssignment(task.id, null)
+                                                showAssignDropdown = false
+                                            }
+                                        )
+                                        if (teamState is UiState.Success) {
+                                            (teamState as UiState.Success).data.members.forEach { member ->
+                                                DropdownMenuItem(
+                                                    text = { Text(member.profile?.fullName ?: "İsimsiz") },
+                                                    onClick = {
+                                                        viewModel.updateTaskAssignment(task.id, member.userId)
+                                                        showAssignDropdown = false
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             })
-                            DetailRow("Bitiş Tarihi", { Text("24 Haziran 2025", style = MaterialTheme.typography.bodyMedium) })
-                            DetailRow("Oluşturan", { Text("Zeynep Ak", style = MaterialTheme.typography.bodyMedium) })
+                            TaskDetailRow("Bitiş Tarihi", { Text("24 Haziran 2025", style = MaterialTheme.typography.bodyMedium) })
+                            TaskDetailRow("Oluşturan", { Text("Zeynep Ak", style = MaterialTheme.typography.bodyMedium) })
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun TaskInfoCard(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = ArgepColors.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(10.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = ArgepColors.Slate100)
+            content()
+        }
+    }
+}
+
+@Composable
+fun TaskDetailRow(label: String, valueContent: @Composable () -> Unit) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.Top) {
+        Text(label.uppercase(), style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500, modifier = Modifier.width(110.dp))
+        valueContent()
     }
 }
 

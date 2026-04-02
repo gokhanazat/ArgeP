@@ -25,8 +25,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import org.koin.compose.viewmodel.koinViewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.argesurec.shared.model.Milestone
-import com.argesurec.shared.model.Project
+import com.argesurec.shared.model.*
 import com.argesurec.shared.ui.components.EmptyState
 import com.argesurec.shared.ui.components.ErrorScreen
 import com.argesurec.shared.ui.components.LoadingScreen
@@ -100,7 +99,8 @@ class ProjectDetailScreen(private val projectId: String) : Screen {
         }
 
         // State'ten ilgili projeyi bul
-        val project = (projectsState as? UiState.Success<ProjectsData>)?.data?.projects?.find { it.id == projectId }
+        val projectWithTeam = (projectsState as? UiState.Success<ProjectsData>)?.data?.projects?.find { it.id == projectId }
+        val project = projectWithTeam?.toProject()
 
         Scaffold(
             topBar = {
@@ -181,7 +181,7 @@ class ProjectDetailScreen(private val projectId: String) : Screen {
                     } else {
                         ProjectDetailContent(
                             padding = padding,
-                            project = project,
+                            project = project!!,
                             milestoneState = milestoneState,
                             teamState = teamState,
                             filesState = filesState,
@@ -208,7 +208,7 @@ class ProjectDetailScreen(private val projectId: String) : Screen {
 
                         if (showEditDialog) {
                             EditProjectDialog(
-                                project = project,
+                                project = project!!,
                                 onDismiss = { showEditDialog = false },
                                 onUpdate = { updatedProject ->
                                     projectsViewModel.updateProject(updatedProject)

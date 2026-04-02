@@ -7,6 +7,8 @@ import com.argesurec.shared.repository.ProjectRepository
 import com.argesurec.shared.repository.TaskRepository
 import com.argesurec.shared.repository.MilestoneRepository
 import com.argesurec.shared.util.UiState
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,7 +38,8 @@ data class PortfolioReport(
 class ReportsViewModel(
     private val projectRepository: ProjectRepository,
     private val milestoneRepository: MilestoneRepository,
-    private val taskRepository: TaskRepository
+    private val taskRepository: TaskRepository,
+    private val supabase: SupabaseClient
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<UiState<PortfolioReport>>(UiState.Loading)
@@ -50,7 +53,8 @@ class ReportsViewModel(
         viewModelScope.launch {
             _state.emit(UiState.Loading)
             try {
-                val projects = projectRepository.getAll().firstOrNull() ?: emptyList()
+                val userId = supabase.auth.currentUserOrNull()?.id ?: ""
+                val projects = projectRepository.getAll(userId).firstOrNull() ?: emptyList()
                 val milestones = milestoneRepository.getAll().firstOrNull() ?: emptyList()
                 val tasks = taskRepository.getAll().firstOrNull() ?: emptyList()
                 

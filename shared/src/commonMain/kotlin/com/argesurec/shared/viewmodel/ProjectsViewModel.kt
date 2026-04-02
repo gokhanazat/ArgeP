@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.argesurec.shared.model.Project
 import com.argesurec.shared.model.ProjectPhase
+import com.argesurec.shared.model.ProjectWithTeam
 import com.argesurec.shared.repository.ProjectRepository
 import com.argesurec.shared.util.UiState
 import io.github.jan.supabase.SupabaseClient
@@ -15,7 +16,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class ProjectsData(
-    val projects: List<Project> = emptyList(),
+    val projects: List<ProjectWithTeam> = emptyList(),
     val selectedPhase: ProjectPhase? = null,
     val activeProjectsCount: Int = 0,
     val completedProjectsCount: Int = 0
@@ -44,8 +45,14 @@ class ProjectsViewModel(
         viewModelScope.launch {
             _state.emit(UiState.Loading)
             try {
-                repository.getAll().collect { projects ->
-                    val activeCount = projects.size // Şimdilik hepsi aktif sayılabilir veya filtre eklenebilir
+                val userId = supabase.auth.currentUserOrNull()?.id
+                if (userId == null) {
+                    _state.emit(UiState.Error("Oturum açmadınız."))
+                    return@launch
+                }
+
+                repository.getAll(userId).collect { projects ->
+                    val activeCount = projects.size
                     val completedCount = projects.count { it.status == "Tamamlandı" }
                     _state.emit(UiState.Success(ProjectsData(
                         projects = projects,
@@ -63,7 +70,8 @@ class ProjectsViewModel(
         viewModelScope.launch {
             _state.emit(UiState.Loading)
             try {
-                repository.getByPhase(phase).collect { projects ->
+                val userId = supabase.auth.currentUserOrNull()?.id ?: ""
+                repository.getByPhase(phase, userId).collect { projects ->
                     _state.emit(UiState.Success(ProjectsData(projects = projects, selectedPhase = phase)))
                 }
             } catch (e: Exception) {
