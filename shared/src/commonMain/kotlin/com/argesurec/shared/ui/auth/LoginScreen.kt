@@ -21,8 +21,6 @@ import com.argesurec.shared.viewmodel.AuthViewModel
 import com.argesurec.shared.ui.theme.ArgepColors
 import com.argesurec.shared.util.isWeb
 
-// TUM GENERATED RESOURCE IMPORTLARI KALDIRILDI (BUILD HATASINI KESIN COZMEK ICIN)
-
 class LoginScreen : Screen {
     @Composable
     override fun Content() {
@@ -51,7 +49,7 @@ class LoginScreen : Screen {
                     onPasswordChange = { password = it },
                     onRememberMeChange = { rememberMe = it },
                     onLoginClick = { viewModel.signIn(email, password) },
-                    onRegisterClick = { navigator.push(RegisterScreen()) }
+                    onRegisterClick = { navigator.push(RegisterScreen()) } // Passes the action correctly
                 )
             }
         } else {
@@ -79,7 +77,7 @@ class LoginScreen : Screen {
         onPasswordChange: (String) -> Unit,
         onRememberMeChange: (Boolean) -> Unit,
         onLoginClick: () -> Unit,
-        onRegisterClick: () -> Unit
+        onRegisterClick: () -> Unit // Action passed from Content
     ) {
         Surface(
             modifier = Modifier
@@ -100,7 +98,6 @@ class LoginScreen : Screen {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    // Logo alani tamamen statik hale getirildi
                     Box(
                         modifier = Modifier
                             .size(220.dp)
@@ -229,7 +226,7 @@ class LoginScreen : Screen {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Hesabınız yok mu?", style = MaterialTheme.typography.bodySmall, color = ArgepColors.Slate500)
-                        TextButton(onClick = { navigator.push(RegisterScreen()) }) {
+                        TextButton(onClick = onRegisterClick) { // Correctly uses the passed action
                             Text("Kaydolun", color = ArgepColors.ExecutiveSecondary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                     }
