@@ -34,11 +34,11 @@ fun ExecutiveSidebar(
         Text("Argep", style = MaterialTheme.typography.headlineSmall, color = ArgepColors.White)
         Spacer(modifier = Modifier.height(48.dp))
         
-        SidebarItem("Dashboard", HomeTab, tabNavigator.current == HomeTab) { tabNavigator.current = HomeTab }
-        SidebarItem("Projeler", ProjectsTab, tabNavigator.current == ProjectsTab) { tabNavigator.current = ProjectsTab }
-        SidebarItem("Raporlar", ReportsTab, tabNavigator.current == ReportsTab) { tabNavigator.current = ReportsTab }
-        SidebarItem("Ekip", TeamTab, tabNavigator.current == TeamTab) { tabNavigator.current = TeamTab }
-        SidebarItem("Profil", ProfileTab, tabNavigator.current == ProfileTab) { tabNavigator.current = ProfileTab }
+        SidebarItem("Dashboard", tabNavigator.current == HomeTab) { tabNavigator.current = HomeTab }
+        SidebarItem("Projeler", tabNavigator.current == ProjectsTab) { tabNavigator.current = ProjectsTab }
+        SidebarItem("Raporlar", tabNavigator.current == ReportsTab) { tabNavigator.current = ReportsTab }
+        SidebarItem("Ekip", tabNavigator.current == TeamTab) { tabNavigator.current = TeamTab }
+        SidebarItem("Profil", tabNavigator.current == ProfileTab) { tabNavigator.current = ProfileTab }
         
         Spacer(modifier = Modifier.weight(1f))
         
@@ -69,23 +69,25 @@ fun ExecutiveSidebar(
 @Composable
 private fun SidebarItem(
     label: String,
-    tab: Tab,
     isActive: Boolean,
     onClick: () -> Unit
 ) {
     Surface(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .clickable { onClick() },
-        color = if (isActive) ArgepColors.ExecutiveSecondary.copy(alpha = 0.2f) else Color.Transparent,
+            .padding(vertical = 4.dp),
+        color = if (isActive) ArgepColors.ExecutiveSecondary.copy(alpha = 0.1f) else Color.Transparent,
         shape = RoundedCornerShape(8.dp)
     ) {
         Text(
             label,
-            modifier = Modifier.padding(12.dp),
-            style = MaterialTheme.typography.titleMedium,
-            color = if (isActive) ArgepColors.White else ArgepColors.White.copy(alpha = 0.7f)
+            modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp),
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontSize = 15.sp,
+                letterSpacing = 0.5.sp
+            ),
+            color = if (isActive) ArgepColors.ExecutiveSecondary else ArgepColors.White.copy(alpha = 0.7f)
         )
     }
 }

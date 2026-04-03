@@ -32,7 +32,7 @@ fun AppNavigation() {
             TabNavigator(HomeTab) {
                 if (isWeb) {
                     Row(modifier = Modifier.fillMaxSize()) {
-                        ExecutiveSidebar(onLogout = { authViewModel.logout() })
+                        ExecutiveSidebar(onLogout = { authViewModel.signOut() })
                         Box(modifier = Modifier.weight(1f)) {
                             CurrentTab()
                         }
