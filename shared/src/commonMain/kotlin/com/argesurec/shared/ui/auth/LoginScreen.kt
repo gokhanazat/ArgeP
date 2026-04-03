@@ -50,7 +50,6 @@ class LoginScreen : Screen {
                 onRegisterClick = { navigator.push(RegisterScreen()) }
             )
         } else {
-            // Existing Mobile Content (Simplified for brevity but kept functional)
             MobileAuthContent(
                 email = email,
                 password = password,
@@ -87,7 +86,6 @@ class LoginScreen : Screen {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // Logo Image Placeholder (User will put login_hero.png)
                 Box(
                     modifier = Modifier
                         .size(280.dp)
@@ -102,7 +100,6 @@ class LoginScreen : Screen {
                             contentScale = ContentScale.Fit
                         )
                     } catch (e: Exception) {
-                        // Fallback if image not found
                         Text("Logo", color = Color.White.copy(alpha = 0.3f), style = MaterialTheme.typography.headlineLarge)
                     }
                 }
@@ -160,21 +157,13 @@ class LoginScreen : Screen {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    ModernInputField(
-                        label = "ŞİFRE",
-                        value = password,
-                        placeholder = "••••••••",
-                        isPassword = true,
-                        onValueChange = onPasswordChange
-                    )
-                    TextButton(
-                        onClick = { /* Forgot Password logic */ },
-                        modifier = Modifier.align(Alignment.TopEnd).offset(y = (-4).dp)
-                    ) {
-                        Text("Şifremi Unuttum", color = ArgepColors.ExecutiveSecondary, fontSize = 12.sp)
-                    }
-                }
+                ModernInputField(
+                    label = "ŞİFRE",
+                    value = password,
+                    placeholder = "••••••••",
+                    isPassword = true,
+                    onValueChange = onPasswordChange
+                )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
