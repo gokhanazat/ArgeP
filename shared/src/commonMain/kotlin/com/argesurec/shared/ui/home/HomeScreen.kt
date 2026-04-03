@@ -76,81 +76,64 @@ fun ExecutiveDashboard(
     projectsUiState: UiState<ProjectsData>,
     onTaskClick: (String) -> Unit
 ) {
-    Row(modifier = Modifier.fillMaxSize().background(ArgepColors.ExecutiveBackground)) {
-        // Sidebar (Minimalist)
-        Column(
-            modifier = Modifier
-                .width(260.dp)
-                .fillMaxHeight()
-                .background(ArgepColors.ExecutivePrimary)
-                .padding(24.dp)
-        ) {
-            Text("Argep", style = MaterialTheme.typography.headlineSmall, color = ArgepColors.White)
-            Spacer(modifier = Modifier.height(48.dp))
-            ExecutiveNavItem("Dashboard", true)
-            ExecutiveNavItem("Projeler", false)
-            ExecutiveNavItem("Görevler", false)
-            ExecutiveNavItem("Raporlar", false)
-            Spacer(modifier = Modifier.weight(1f))
-            ExecutiveNavItem("Destek", false)
+    // Main Content Area
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(ArgepColors.ExecutiveBackground)
+            .verticalScroll(rememberScrollState())
+            .padding(48.dp)
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Column {
+                Text("Executive Dashboard", style = MaterialTheme.typography.displayLarge.copy(fontSize = 32.sp), color = ArgepColors.ExecutivePrimary)
+                Text("Gerçek zamanlı ekosistem performansı.", style = MaterialTheme.typography.bodyMedium, color = ArgepColors.Slate500)
+            }
+            ExecutiveButton("Yeni Girişim", onClick = {})
         }
 
-        // Main Content Area
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .verticalScroll(rememberScrollState())
-                .padding(48.dp)
-        ) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Column {
-                    Text("Executive Dashboard", style = MaterialTheme.typography.displayLarge.copy(fontSize = 32.sp), color = ArgepColors.ExecutivePrimary)
-                    Text("Gerçek zamanlı ekosistem performansı.", style = MaterialTheme.typography.bodyMedium, color = ArgepColors.Slate500)
-                }
-                ExecutiveButton("Yeni Girişim", onClick = {})
-            }
+        Spacer(modifier = Modifier.height(48.dp))
 
-            Spacer(modifier = Modifier.height(48.dp))
+        // Stat Cards Grid
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+            val activePrj = (projectsUiState as? UiState.Success<ProjectsData>)?.data?.activeProjectsCount ?: 0
+            val pendingTsk = (taskUiState as? UiState.Success<TaskData>)?.data?.pendingTasksCount ?: 0
+            val completedTsk = (taskUiState as? UiState.Success<TaskData>)?.data?.completedTasksCount ?: 0
 
-            // Stat Cards Grid
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                val activePrj = (projectsUiState as? UiState.Success<ProjectsData>)?.data?.activeProjectsCount ?: 0
-                val pendingTsk = (taskUiState as? UiState.Success<TaskData>)?.data?.pendingTasksCount ?: 0
-                val completedTsk = (taskUiState as? UiState.Success<TaskData>)?.data?.completedTasksCount ?: 0
+            ExecutiveStatCard("Aktif Projeler", activePrj.toString(), "↑ 12%", "◫", modifier = Modifier.weight(1f))
+            ExecutiveStatCard("Bekleyen Görevler", pendingTsk.toString(), "Kritik", "⌛", modifier = Modifier.weight(1f))
+            ExecutiveStatCard("Tamamlanan", completedTsk.toString(), "Başarı", "✓", modifier = Modifier.weight(1f))
+            ExecutiveStatCard("Geciken", "07", "↓ 5%", "!", modifier = Modifier.weight(1f))
+        }
 
-                ExecutiveStatCard("Aktif Projeler", activePrj.toString(), "↑ 12%", "◫", modifier = Modifier.weight(1f))
-                ExecutiveStatCard("Bekleyen Görevler", pendingTsk.toString(), "Kritik", "⌛", modifier = Modifier.weight(1f))
-                ExecutiveStatCard("Tamamlanan", completedTsk.toString(), "Başarı", "✓", modifier = Modifier.weight(1f))
-                ExecutiveStatCard("Geciken", "07", "↓ 5%", "!", modifier = Modifier.weight(1f))
-            }
+        Spacer(modifier = Modifier.height(48.dp))
 
-            Spacer(modifier = Modifier.height(48.dp))
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(48.dp)) {
-                Column(modifier = Modifier.weight(0.65f)) {
-                    DashboardSectionCard(title = "Bana Atanan Görevler", badge = "Görünürlük Yüksek") {
-                        when (val uiState = taskUiState) {
-                            is UiState.Success<TaskData> -> {
-                                uiState.data.assignedTasks.take(4).forEach { task ->
-                                    PremiumTaskRow(task, onClick = { onTaskClick(task.id!!) })
-                                }
+        // Asymmetric Content Grid
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(48.dp)) {
+            // Left: Tasks List
+            Column(modifier = Modifier.weight(0.65f)) {
+                DashboardSectionCard(title = "Bana Atanan Görevler", badge = "Görünürlük Yüksek") {
+                    when (val uiState = taskUiState) {
+                        is UiState.Success<TaskData> -> {
+                            uiState.data.assignedTasks.take(4).forEach { task ->
+                                PremiumTaskRow(task, onClick = { onTaskClick(task.id!!) })
                             }
-                            else -> Box(Modifier.fillMaxWidth().height(100.dp))
                         }
+                        else -> Box(Modifier.fillMaxWidth().height(100.dp))
                     }
                 }
+            }
 
-                Column(modifier = Modifier.weight(0.35f)) {
-                    DashboardSectionCard(title = "Proje Yol Haritası") {
-                        when (val uiState = projectsUiState) {
-                            is UiState.Success<ProjectsData> -> {
-                                uiState.data.projects.take(4).forEach { project ->
-                                    ExecutiveProjectRow(project.name, project.phase.name, 0.65f)
-                                }
+            // Right: Roadmap
+            Column(modifier = Modifier.weight(0.35f)) {
+                DashboardSectionCard(title = "Proje Yol Haritası") {
+                    when (val uiState = projectsUiState) {
+                        is UiState.Success<ProjectsData> -> {
+                            uiState.data.projects.take(4).forEach { project ->
+                                ExecutiveProjectRow(project.name, project.phase.name, 0.65f)
                             }
-                            else -> Box(Modifier.fillMaxWidth().height(100.dp))
                         }
+                        else -> Box(Modifier.fillMaxWidth().height(100.dp))
                     }
                 }
             }

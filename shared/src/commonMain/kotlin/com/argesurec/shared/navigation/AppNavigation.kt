@@ -14,6 +14,10 @@ import cafe.adriel.voyager.navigator.tab.TabNavigator
 import com.argesurec.shared.ui.auth.LoginScreen
 import com.argesurec.shared.ui.theme.ArgepTheme
 import com.argesurec.shared.viewmodel.AuthViewModel
+import com.argesurec.shared.util.isWeb
+import com.argesurec.shared.ui.components.ExecutiveSidebar
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 
 @Composable
 fun AppNavigation() {
@@ -26,13 +30,22 @@ fun AppNavigation() {
     ArgepTheme(darkTheme = isDarkMode) {
         if (authState.isLoggedIn) {
             TabNavigator(HomeTab) {
-                Scaffold(
-                    bottomBar = {
-                        BottomNavBar()
+                if (isWeb) {
+                    Row(modifier = Modifier.fillMaxSize()) {
+                        ExecutiveSidebar(onLogout = { authViewModel.logout() })
+                        Box(modifier = Modifier.weight(1f)) {
+                            CurrentTab()
+                        }
                     }
-                ) { padding ->
-                    Box(modifier = Modifier.padding(padding)) {
-                        CurrentTab()
+                } else {
+                    Scaffold(
+                        bottomBar = {
+                            BottomNavBar()
+                        }
+                    ) { padding ->
+                        Box(modifier = Modifier.padding(padding)) {
+                            CurrentTab()
+                        }
                     }
                 }
             }
