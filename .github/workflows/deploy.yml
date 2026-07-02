@@ -37,4 +37,4 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: argep-web
           directory: webApp/build/dist/wasmJs/productionExecutable
-          gitBranch: main
+          branch: main
