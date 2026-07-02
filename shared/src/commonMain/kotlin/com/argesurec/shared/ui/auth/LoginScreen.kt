@@ -13,6 +13,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Image
+import org.jetbrains.compose.resources.painterResource
+import argesurec.shared.generated.resources.*
 import cafe.adriel.voyager.core.screen.Screen
 import org.koin.compose.viewmodel.koinViewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -20,6 +23,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.argesurec.shared.viewmodel.AuthViewModel
 import com.argesurec.shared.ui.theme.ArgepColors
 import com.argesurec.shared.util.isWeb
+import com.argesurec.shared.util.strings
 
 class LoginScreen : Screen {
     @Composable
@@ -104,22 +108,17 @@ class LoginScreen : Screen {
                             .background(Color.White, RoundedCornerShape(110.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        // KESIN COZUM: Resource referansi tamamen kaldirildi. 
-                        // Su an her sey calisacak hale getirildi.
-                        Text(
-                            "LOGO", 
-                            color = ArgepColors.ExecutivePrimary, 
-                            style = MaterialTheme.typography.displayLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 48.sp
-                            )
+                        Image(
+                            painter = painterResource(Res.drawable.app_logo),
+                            contentDescription = strings.appName,
+                            modifier = Modifier.size(150.dp)
                         )
                     }
                     
                     Spacer(modifier = Modifier.height(32.dp))
                     
                     Text(
-                        "Ar-Ge Yönetim",
+                        strings.appName,
                         style = MaterialTheme.typography.displaySmall.copy(
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
@@ -127,12 +126,12 @@ class LoginScreen : Screen {
                         )
                     )
                     Text(
-                        "Sistemi",
+                        strings.managementSystem,
                         style = MaterialTheme.typography.displaySmall.copy(
                             fontWeight = FontWeight.Light,
                             color = Color.White.copy(alpha = 0.8f),
-                            fontSize = 32.sp,
-                            letterSpacing = 4.sp
+                            fontSize = 24.sp,
+                            letterSpacing = 2.sp
                         )
                     )
                 }
@@ -147,14 +146,14 @@ class LoginScreen : Screen {
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
-                        "Hoş Geldiniz",
+                        strings.welcomeBack,
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = ArgepColors.ExecutivePrimary
                         )
                     )
                     Text(
-                        "Lütfen hesap bilgilerinizle giriş yapın.",
+                        strings.loginInstructions,
                         style = MaterialTheme.typography.bodyMedium,
                         color = ArgepColors.Slate500
                     )
@@ -162,18 +161,18 @@ class LoginScreen : Screen {
                     Spacer(modifier = Modifier.height(40.dp))
 
                     ModernInputField(
-                        label = "E-POSTA",
+                        label = strings.email.uppercase(),
                         value = email,
-                        placeholder = "ornek@argep.com",
+                        placeholder = strings.emailExample,
                         onValueChange = onEmailChange
                     )
 
                     Spacer(modifier = Modifier.height(20.dp))
 
                     ModernInputField(
-                        label = "ŞİFRE",
+                        label = strings.password.uppercase(),
                         value = password,
-                        placeholder = "••••••••",
+                        placeholder = strings.passwordDots,
                         isPassword = true,
                         onValueChange = onPasswordChange
                     )
@@ -189,7 +188,7 @@ class LoginScreen : Screen {
                             onCheckedChange = onRememberMeChange,
                             colors = CheckboxDefaults.colors(checkedColor = ArgepColors.ExecutivePrimary)
                         )
-                        Text("Beni hatırla", style = MaterialTheme.typography.bodySmall, color = ArgepColors.Slate600)
+                        Text(strings.rememberMe, style = MaterialTheme.typography.bodySmall, color = ArgepColors.Slate600)
                     }
 
                     Spacer(modifier = Modifier.height(32.dp))
@@ -203,7 +202,7 @@ class LoginScreen : Screen {
                             colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.ExecutivePrimary),
                             shape = RoundedCornerShape(8.dp)
                         ) {
-                            Text("Giriş Yap", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                            Text(strings.login, style = MaterialTheme.typography.titleMedium, color = Color.White)
                         }
                     }
 
@@ -222,16 +221,8 @@ class LoginScreen : Screen {
                     
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Hesabınız yok mu?", style = MaterialTheme.typography.bodySmall, color = ArgepColors.Slate500)
-                        TextButton(onClick = onRegisterClick) {
-                            Text("Kaydolun", color = ArgepColors.ExecutiveSecondary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
-                    }
+                    // Registration disabled for SaaS private mode
+
                 }
             }
         }
@@ -249,51 +240,88 @@ class LoginScreen : Screen {
         onRegisterClick: () -> Unit
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(24.dp),
+            modifier = Modifier.fillMaxSize().background(ArgepColors.White).padding(32.dp),
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.Start
         ) {
-            Text("Argep", style = MaterialTheme.typography.displaySmall, color = ArgepColors.ExecutivePrimary, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(48.dp))
-
-            OutlinedTextField(
-                value = email,
-                onValueChange = onEmailChange,
-                label = { Text("E-posta") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = onPasswordChange,
-                label = { Text("Şifre") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth()
-            )
-
+            Surface(
+                modifier = Modifier.size(64.dp),
+                color = ArgepColors.Navy900,
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Image(
+                        painter = painterResource(Res.drawable.app_logo),
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+            }
+            
             Spacer(modifier = Modifier.height(32.dp))
+            
+            Text(
+                strings.welcomeBack,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = ArgepColors.Navy900
+            )
+            Text(
+                strings.loginInstructions,
+                style = MaterialTheme.typography.bodyMedium,
+                color = ArgepColors.Slate500
+            )
+
+            Spacer(modifier = Modifier.height(40.dp))
+
+            ModernInputField(
+                label = strings.email.uppercase(),
+                value = email,
+                placeholder = strings.emailExample,
+                onValueChange = onEmailChange
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            ModernInputField(
+                label = strings.password.uppercase(),
+                value = password,
+                placeholder = strings.passwordDots,
+                isPassword = true,
+                onValueChange = onPasswordChange
+            )
+
+            Spacer(modifier = Modifier.height(40.dp))
 
             if (isLoading) {
-                CircularProgressIndicator()
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = ArgepColors.Navy900)
+                }
             } else {
                 Button(
                     onClick = onLoginClick,
                     modifier = Modifier.fillMaxWidth().height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.ExecutivePrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.Navy900),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Giriş Yap")
+                    Text(strings.login, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
 
             error?.let {
-                Text(text = it, color = Color.Red, modifier = Modifier.padding(top = 8.dp))
+                Text(
+                    text = it, 
+                    color = ArgepColors.Error, 
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 16.dp).fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
             }
 
-            TextButton(onClick = onRegisterClick, modifier = Modifier.padding(top = 16.dp)) {
-                Text("Hesabınız yok mu? Kayıt olun")
-            }
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Registration disabled for SaaS private mode
+
         }
     }
 }
@@ -314,23 +342,23 @@ fun ModernInputField(
                 fontSize = 11.sp,
                 letterSpacing = 1.sp
             ),
-            color = ArgepColors.Slate700
+            color = ArgepColors.Slate400
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         TextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = { Text(placeholder, color = ArgepColors.Slate400, fontSize = 14.sp) },
+            placeholder = { Text(placeholder, color = ArgepColors.Slate300, fontSize = 15.sp) },
             modifier = Modifier.fillMaxWidth(),
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = ArgepColors.ExecutiveSurfaceLow,
-                unfocusedContainerColor = ArgepColors.ExecutiveSurfaceLow,
-                disabledContainerColor = ArgepColors.ExecutiveSurfaceLow,
-                cursorColor = ArgepColors.ExecutivePrimary,
-                focusedIndicatorColor = Color.Transparent,
+                focusedContainerColor = ArgepColors.Slate50,
+                unfocusedContainerColor = ArgepColors.Slate50,
+                disabledContainerColor = ArgepColors.Slate50,
+                cursorColor = ArgepColors.Navy900,
+                focusedIndicatorColor = ArgepColors.Navy700,
                 unfocusedIndicatorColor = Color.Transparent,
             ),
-            shape = RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(12.dp),
             visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
             singleLine = true
         )

@@ -17,62 +17,78 @@ import com.argesurec.shared.model.Task
 import com.argesurec.shared.model.TaskPriority
 import com.argesurec.shared.ui.theme.ArgepColors
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 
 @Composable
 fun ExecutiveStatCard(
     label: String,
     value: String,
     trend: String,
-    icon: String,
-    iconBg: Color = ArgepColors.ExecutiveSurfaceLow,
+    icon: ImageVector,
+    iconColor: Color = ArgepColors.ChartBlue,
+    iconBg: Color = ArgepColors.ChartBlueBg,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier.shadow(
-            elevation = 0.dp, // No standard shadow
-            spotColor = ArgepColors.ExecutivePrimary.copy(alpha = 0.08f)
+            elevation = 8.dp,
+            shape = RoundedCornerShape(16.dp),
+            spotColor = iconColor.copy(alpha = 0.6f)
         ),
-        colors = CardDefaults.cardColors(containerColor = ArgepColors.White),
-        shape = RoundedCornerShape(12.dp)
+        colors = CardDefaults.cardColors(containerColor = iconColor),
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Column(modifier = Modifier.padding(24.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Surface(
-                    modifier = Modifier.size(40.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    color = iconBg
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(icon, fontSize = 20.sp)
-                    }
-                }
-                
-                Surface(
-                    color = if (trend.contains("+") || trend.contains("↑")) ArgepColors.Phase3Light else ArgepColors.Phase2Light,
-                    shape = RoundedCornerShape(4.dp)
-                ) {
-                    Text(
-                        trend,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (trend.contains("+") || trend.contains("↑")) ArgepColors.Phase3 else ArgepColors.Phase2
-                    )
-                }
+        Box(
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+        ) {
+            // Watermark icon in top right
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 16.dp, y = (-16).dp)
+                    .size(72.dp)
+                    .background(Color.White.copy(alpha = 0.15f), shape = androidx.compose.foundation.shape.CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon, 
+                    contentDescription = null, 
+                    modifier = Modifier.size(32.dp).offset(x = (-8).dp, y = 8.dp), 
+                    tint = Color.White.copy(alpha = 0.9f)
+                )
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Text(
-                text = label.uppercase(),
-                style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.05.sp, fontWeight = FontWeight.Bold),
-                color = ArgepColors.Slate500
-            )
-            
-            Text(
-                text = value,
-                style = MaterialTheme.typography.displayLarge.copy(fontSize = 32.sp), 
-                color = ArgepColors.ExecutivePrimary
-            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp, horizontal = 16.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.5.sp
+                    ),
+                    color = Color.White.copy(alpha = 0.85f),
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.displayMedium.copy(
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = (-0.5).sp
+                    ),
+                    color = Color.White
+                )
+            }
         }
     }
 }
@@ -82,30 +98,75 @@ fun ExecutiveProjectRow(
     name: String,
     phase: String,
     progress: Float,
-    status: String = "Normal"
+    eta: String = "Nov 12"
 ) {
-    Column(modifier = Modifier.padding(vertical = 12.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = ArgepColors.ExecutivePrimary)
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        colors = CardDefaults.cardColors(containerColor = ArgepColors.White),
+        shape = RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, ArgepColors.Slate100)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = phase.uppercase(),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    ),
+                    color = ArgepColors.ChartBlue
+                )
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = ArgepColors.Slate400
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
             Text(
-                "${(progress * 100).toInt()}%",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
+                text = name,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 color = ArgepColors.ExecutivePrimary
             )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            LinearProgressIndicator(
+                progress = progress,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = ArgepColors.ChartBlue,
+                trackColor = ArgepColors.ChartBlueBg,
+                strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "${(progress * 100).toInt()}% Complete",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = ArgepColors.Slate500
+                )
+                Text(
+                    text = "ETA: $eta",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = ArgepColors.Slate500
+                )
+            }
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        LinearProgressIndicator(
-            progress = progress,
-            modifier = Modifier.fillMaxWidth().height(4.dp), // Architectural: Slim, no round ends logic below
-            color = ArgepColors.ExecutiveSecondary,
-            trackColor = ArgepColors.ExecutiveSurfaceLow,
-            strokeCap = androidx.compose.ui.graphics.StrokeCap.Butt 
-        )
     }
 }
 
@@ -246,35 +307,53 @@ fun ProjectProgressRow(
     phaseColor: Color,
     phaseBg: Color
 ) {
-    Column(modifier = Modifier.padding(vertical = 9.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
+        // TOP SECTION: Percentage and Category Name
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Surface(color = phaseBg, shape = RoundedCornerShape(20.dp)) {
-                Text(
-                    phase,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = phaseColor
+            Text(
+                text = "${(progress * 100).toInt()}%",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    color = ArgepColors.Slate500
                 )
-            }
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = name,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = ArgepColors.Navy900
+                )
+            )
         }
-        Spacer(modifier = Modifier.height(8.dp))
+        
+        Spacer(modifier = Modifier.height(10.dp))
+        
+        // PROGRESS BAR: Thick, Rounded, Modern
         LinearProgressIndicator(
             progress = progress,
-            modifier = Modifier.fillMaxWidth().height(6.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(10.dp)
+                .clip(RoundedCornerShape(8.dp)),
             color = phaseColor,
-            trackColor = ArgepColors.Slate200,
+            trackColor = phaseColor.copy(alpha = 0.12f),
             strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
         )
+        
+        Spacer(modifier = Modifier.height(6.dp))
+        
+        // BOTTOM SECTION: Spent / Total or Phase logic
         Text(
-            text = "${(progress * 100).toInt()}% · Milestone Bilgisi",
-            style = MaterialTheme.typography.labelSmall,
-            color = ArgepColors.Slate500,
-            modifier = Modifier.padding(top = 4.dp)
+            text = "Durum: $phase",
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Medium,
+                color = ArgepColors.Slate500
+            )
         )
     }
 }

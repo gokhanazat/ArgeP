@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.argesurec.shared.model.Expense
 import com.argesurec.shared.repository.ExpenseRepository
+import com.argesurec.shared.repository.ProfileRepository
 import com.argesurec.shared.util.UiState
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -19,6 +20,7 @@ data class ExpenseData(
 
 class ExpenseViewModel(
     private val repository: ExpenseRepository,
+    private val profileRepository: ProfileRepository,
     private val supabase: SupabaseClient
 ) : ViewModel() {
 
@@ -46,18 +48,23 @@ class ExpenseViewModel(
 
     fun addExpense(projectId: String, amount: Double, description: String?, category: String) {
         viewModelScope.launch {
-            val userId = supabase.auth.currentUserOrNull()?.id
-            if (userId == null) {
-                _actionMessage.emit("Oturum açık değil.")
+            val userProfile = profileRepository.profile.value
+            val orgId = userProfile?.orgId ?: ""
+            
+            if (orgId.isEmpty()) {
+                _actionMessage.emit("İşletme bilgisi bulunamadı.")
                 return@launch
             }
 
             val newExpense = Expense(
+                id = null,
+                orgId = orgId,
                 projectId = projectId,
                 amount = amount,
                 category = category,
                 description = description,
-                createdBy = userId
+                createdBy = userProfile?.id,
+                createdAt = null
             )
 
             val result = repository.insert(newExpense)

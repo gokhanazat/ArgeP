@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.argesurec.shared.model.TeamMemberWithProfile
 import com.argesurec.shared.repository.TeamRepository
+import com.argesurec.shared.repository.ProfileRepository
 import com.argesurec.shared.util.UiState
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.functions.functions
@@ -29,6 +30,8 @@ data class InviteResponse(
 
 class TeamViewModel(
     private val repository: TeamRepository,
+    private val profileRepository: ProfileRepository,
+    private val billingRepository: com.argesurec.shared.model.BillingRepository,
     private val supabase: SupabaseClient
 ) : ViewModel() {
 
@@ -58,7 +61,12 @@ class TeamViewModel(
         viewModelScope.launch {
             _state.emit(UiState.Loading)
             try {
-                repository.getAllWithProfiles().collect { members ->
+                val orgId = profileRepository.profile.value?.orgId
+                if (orgId == null) {
+                    _state.emit(UiState.Error("İşletme bilgisi bulunamadı."))
+                    return@launch
+                }
+                repository.getAllWithProfiles(orgId).collect { members ->
                     _state.emit(UiState.Success(TeamData(members = members)))
                 }
             } catch (e: Exception) {
@@ -81,6 +89,50 @@ class TeamViewModel(
         }
     }
 
+    fun inviteMember(email: String, role: String) {
+        viewModelScope.launch {
+            _actionMessage.value = "Üye ekleniyor..."
+            _isActionLoading.value = true
+            try {
+                val orgId = profileRepository.profile.value?.orgId
+                if (orgId == null) {
+                    _actionMessage.value = "İşletme bilgisi bulunamadı."
+                    return@launch
+                }
+
+                val response = kotlinx.coroutines.withTimeout(15000) {
+                    supabase.functions.invoke(
+                        function = "invite-member",
+                        body = buildJsonObject {
+                            put("email", email)
+                            put("role", role)
+                            put("orgId", orgId)
+                        }
+                    )
+                }
+
+                val responseBody = response.bodyAsText()
+                val result = try {
+                    Json { ignoreUnknownKeys = true }.decodeFromString<InviteResponse>(responseBody)
+                } catch (parseEx: Exception) {
+                    _actionMessage.value = "Sunucu yanıtı: $responseBody"
+                    return@launch
+                }
+
+                if (result.success) {
+                    _actionMessage.value = "Üye başarıyla eklendi."
+                    loadTeam()
+                } else {
+                    _actionMessage.value = result.error ?: "Davet başarısız oldu."
+                }
+            } catch (e: Exception) {
+                _actionMessage.value = "Hata: ${e.message}"
+            } finally {
+                _isActionLoading.value = false
+            }
+        }
+    }
+
     fun inviteMember(email: String, role: String, projectId: String) {
         viewModelScope.launch {
             _actionMessage.value = "Üye ekleniyor..."
@@ -91,7 +143,18 @@ class TeamViewModel(
                     return@launch
                 }
 
+                // ENFORCE LIMIT: 3 Team Members for Free users
+                val currentState = _state.value
+                if (currentState is UiState.Success) {
+                    val isPremium = billingRepository.isPremium.value
+                    if (!isPremium && currentState.data.members.size >= 3) {
+                        _actionMessage.value = "Ücretsiz planda en fazla 3 ekip üyesi ekleyebilirsiniz. Lütfen Premium'a yükseltin."
+                        return@launch
+                    }
+                }
+
                 // Edge Function çağrısını 15 saniye ile sınırla
+                val orgId = profileRepository.profile.value?.orgId
                 val response = kotlinx.coroutines.withTimeout(15000) {
                     supabase.functions.invoke(
                         function = "invite-member",
@@ -99,6 +162,7 @@ class TeamViewModel(
                             put("email", email)
                             put("projectId", projectId)
                             put("role", role)
+                            put("orgId", orgId ?: "")
                         }
                     )
                 }

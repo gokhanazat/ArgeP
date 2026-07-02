@@ -21,11 +21,14 @@ data class AuthState(
     val isLoggedIn: Boolean = false,
     val error: String? = null,
     val currentUser: UserInfo? = null,
-    val userProfile: com.argesurec.shared.model.UserProfile? = null
+    val userProfile: com.argesurec.shared.model.UserProfile? = null,
+    val organization: com.argesurec.shared.model.Organization? = null
 )
 
 class AuthViewModel(
-    private val supabase: SupabaseClient
+    private val supabase: SupabaseClient,
+    private val profileRepository: com.argesurec.shared.repository.ProfileRepository,
+    private val organizationRepository: com.argesurec.shared.repository.OrganizationRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -48,7 +51,22 @@ class AuthViewModel(
                                 currentUser = user,
                                 isLoading = false
                             ).also {
-                                user?.id?.let { fetchProfile(it) }
+                                user?.id?.let { userId ->
+                                    fetchProfile(userId)
+                                    // Profil değişikliklerini dinle
+                                    viewModelScope.launch {
+                                        profileRepository.profile.collect { profile ->
+                                            _state.update { it.copy(userProfile = profile) }
+                                            
+                                            // İşletme bilgilerini de güncelle
+                                            profile?.orgId?.let { orgId ->
+                                                organizationRepository.getOrganization(orgId).collect { org ->
+                                                    _state.update { it.copy(organization = org) }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                         is SessionStatus.NotAuthenticated -> {
@@ -157,11 +175,7 @@ class AuthViewModel(
     private fun fetchProfile(userId: String) {
         viewModelScope.launch {
             try {
-                val profile = supabase.from("profiles")
-                    .select { filter { eq("id", userId) } }
-                    .decodeSingleOrNull<com.argesurec.shared.model.UserProfile>()
-                
-                _state.update { it.copy(userProfile = profile) }
+                profileRepository.getProfile(userId)
             } catch (e: Exception) {
                 println("Auth Error (FetchProfile): ${e.message}")
             }
@@ -169,6 +183,6 @@ class AuthViewModel(
     }
 
     fun checkSession() {
-        // No longer needed as we observe sessionStatus in init
+        // No longer needed
     }
 }

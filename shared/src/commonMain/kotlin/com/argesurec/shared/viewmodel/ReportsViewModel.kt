@@ -6,6 +6,7 @@ import com.argesurec.shared.model.*
 import com.argesurec.shared.repository.ProjectRepository
 import com.argesurec.shared.repository.TaskRepository
 import com.argesurec.shared.repository.MilestoneRepository
+import com.argesurec.shared.repository.ProfileRepository
 import com.argesurec.shared.util.UiState
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -39,6 +40,8 @@ class ReportsViewModel(
     private val projectRepository: ProjectRepository,
     private val milestoneRepository: MilestoneRepository,
     private val taskRepository: TaskRepository,
+    private val profileRepository: ProfileRepository,
+    private val billingRepository: com.argesurec.shared.model.BillingRepository,
     private val supabase: SupabaseClient
 ) : ViewModel() {
 
@@ -53,10 +56,15 @@ class ReportsViewModel(
         viewModelScope.launch {
             _state.emit(UiState.Loading)
             try {
-                val userId = supabase.auth.currentUserOrNull()?.id ?: ""
-                val projects = projectRepository.getAll(userId).firstOrNull() ?: emptyList()
-                val milestones = milestoneRepository.getAll().firstOrNull() ?: emptyList()
-                val tasks = taskRepository.getAll().firstOrNull() ?: emptyList()
+                val orgId = profileRepository.profile.value?.orgId
+                if (orgId == null) {
+                    _state.emit(UiState.Error("İşletme bilgisi bulunamadı."))
+                    return@launch
+                }
+
+                val projects = projectRepository.getAll(orgId).firstOrNull() ?: emptyList()
+                val milestones = milestoneRepository.getAll(orgId).firstOrNull() ?: emptyList()
+                val tasks = taskRepository.getAll(orgId).firstOrNull() ?: emptyList()
                 
                 // 1. Efficiency (Total Done / Total Tasks)
                 val totalTasksCount = tasks.size
@@ -121,6 +129,27 @@ class ReportsViewModel(
             ProjectPhase.INCUBATION -> "Kuluçka"
             ProjectPhase.DEVELOPMENT -> "Geliştirme"
             ProjectPhase.COMMERCIALIZATION -> "Ticarileşme"
+        }
+    }
+
+    private val _actionMessage = MutableStateFlow<String?>(null)
+    val actionMessage = _actionMessage.asStateFlow()
+    fun clearActionMessage() { _actionMessage.value = null }
+
+    fun analyzeWithAI() {
+        if (billingRepository.isPremium.value) {
+            // Proceed with AI analysis
+            _actionMessage.value = "Yapay Zeka analizi hazırlanıyor..."
+        } else {
+            _actionMessage.value = "Yapay Zeka desteği sadece Premium üyeler içindir."
+        }
+    }
+
+    fun exportToPdf() {
+        if (billingRepository.isPremium.value) {
+            _actionMessage.value = "PDF raporu oluşturuluyor..."
+        } else {
+            _actionMessage.value = "PDF çıktısı alma özelliği sadece Premium üyeler içindir."
         }
     }
 }

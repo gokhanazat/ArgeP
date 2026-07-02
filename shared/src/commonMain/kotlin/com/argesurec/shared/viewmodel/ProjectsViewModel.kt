@@ -19,11 +19,14 @@ data class ProjectsData(
     val projects: List<ProjectWithTeam> = emptyList(),
     val selectedPhase: ProjectPhase? = null,
     val activeProjectsCount: Int = 0,
-    val completedProjectsCount: Int = 0
+    val completedProjectsCount: Int = 0,
+    val isPremium: Boolean = false
 )
 
 class ProjectsViewModel(
     private val repository: ProjectRepository,
+    private val profileRepository: com.argesurec.shared.repository.ProfileRepository,
+    private val billingRepository: com.argesurec.shared.model.BillingRepository,
     private val supabase: SupabaseClient
 ) : ViewModel() {
 
@@ -45,21 +48,22 @@ class ProjectsViewModel(
         viewModelScope.launch {
             _state.emit(UiState.Loading)
             try {
-                val userId = supabase.auth.currentUserOrNull()?.id
-                if (userId == null) {
-                    _state.emit(UiState.Error("Oturum açmadınız."))
+                val orgId = profileRepository.profile.value?.orgId
+                if (orgId == null) {
+                    _state.emit(UiState.Error("İşletme bilgisi bulunamadı."))
                     return@launch
                 }
 
-                repository.getAll(userId).collect { projects ->
-                    val activeCount = projects.size
-                    val completedCount = projects.count { it.status == "Tamamlandı" }
-                    _state.emit(UiState.Success(ProjectsData(
-                        projects = projects,
-                        activeProjectsCount = activeCount,
-                        completedProjectsCount = completedCount
-                    )))
-                }
+                    repository.getAll(orgId).collect { projects ->
+                        val activeCount = projects.size
+                        val completedCount = projects.count { it.status == "Tamamlandı" }
+                        _state.emit(UiState.Success(ProjectsData(
+                            projects = projects,
+                            activeProjectsCount = activeCount,
+                            completedProjectsCount = completedCount,
+                            isPremium = billingRepository.isPremium.value
+                        )))
+                    }
             } catch (e: Exception) {
                 _state.emit(UiState.Error(e.message ?: "Beklenmedik bir hata oluştu."))
             }
@@ -90,18 +94,31 @@ class ProjectsViewModel(
         endDate: String? = null
     ) {
         viewModelScope.launch {
-            val ownerId = supabase.auth.currentUserOrNull()?.id
-            if (ownerId == null) {
-                _actionMessage.emit("Oturum açık değil.")
+            val userProfile = profileRepository.profile.value
+            val orgId = userProfile?.orgId
+            
+            if (orgId == null) {
+                _actionMessage.emit("İşletme bilgisi bulunamadı.")
                 return@launch
+            }
+
+            // ENFORCE LIMIT: 1 Project for Free users
+            val currentState = _state.value
+            if (currentState is UiState.Success) {
+                val isPremium = billingRepository.isPremium.value
+                if (!isPremium && currentState.data.projects.size >= 1) {
+                    _actionMessage.emit("Ücretsiz planda sadece 1 aktif proje oluşturabilirsiniz. Lütfen Premium'a yükseltin.")
+                    return@launch
+                }
             }
 
             val newProject = Project(
                 id = null,
+                orgId = orgId,
                 name = nameInput,
                 description = descriptionInput,
                 phase = phaseInput,
-                ownerId = ownerId,
+                ownerId = userProfile.id,
                 budgetTotal = budgetTotal,
                 budgetSpent = budgetSpent,
                 startDate = startDate,

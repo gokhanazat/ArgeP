@@ -52,16 +52,26 @@ val repositoryModule = module {
     single<com.argesurec.shared.repository.ExpenseRepository> { 
         com.argesurec.shared.repository.impl.SupabaseExpenseRepository(get()) 
     }
+    single<com.argesurec.shared.repository.ProfileRepository> { 
+        com.argesurec.shared.repository.impl.SupabaseProfileRepository(get()) 
+    }
+    single<com.argesurec.shared.repository.OrganizationRepository> { 
+        com.argesurec.shared.repository.impl.SupabaseOrganizationRepository(get()) 
+    }
 }
 
+
 val viewModelModule = module {
-    factory { com.argesurec.shared.viewmodel.AuthViewModel(get()) }
-    single { com.argesurec.shared.viewmodel.ProjectsViewModel(get(), get()) }
-    factory { com.argesurec.shared.viewmodel.MilestoneViewModel(get()) }
-    factory { com.argesurec.shared.viewmodel.TaskViewModel(get(), get()) }
-    single { com.argesurec.shared.viewmodel.TeamViewModel(get(), get()) }
-    factory { com.argesurec.shared.viewmodel.ProjectFilesViewModel(get()) }
-    single { com.argesurec.shared.viewmodel.ExpenseViewModel(get(), get()) }
-    single { com.argesurec.shared.viewmodel.SettingsViewModel() }
-    factory { com.argesurec.shared.viewmodel.ReportsViewModel(get(), get(), get(), get()) }
+    factory { com.argesurec.shared.viewmodel.AuthViewModel(get(), get(), get()) }
+    single { com.argesurec.shared.viewmodel.ProjectsViewModel(get(), get(), get(), get()) }
+    factory { com.argesurec.shared.viewmodel.MilestoneViewModel(get(), get()) }
+    factory { com.argesurec.shared.viewmodel.TaskViewModel(get(), get(), get()) }
+    single { com.argesurec.shared.viewmodel.TeamViewModel(get(), get(), get(), get()) }
+    factory { com.argesurec.shared.viewmodel.ProjectFilesViewModel(get(), get()) }
+    single { com.argesurec.shared.viewmodel.ExpenseViewModel(get(), get(), get()) }
+    single { com.argesurec.shared.viewmodel.SettingsViewModel(get()) }
+
+    factory { com.argesurec.shared.viewmodel.ReportsViewModel(get(), get(), get(), get(), get(), get()) }
+    factory { com.argesurec.shared.viewmodel.SubscriptionViewModel(get()) }
+    factory { com.argesurec.shared.viewmodel.OrganizationViewModel(get(), get(), get()) }
 }

@@ -15,7 +15,8 @@ data class FileData(
 )
 
 class ProjectFilesViewModel(
-    private val repository: ProjectRepository
+    private val repository: ProjectRepository,
+    private val billingRepository: com.argesurec.shared.model.BillingRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<UiState<FileData>>(UiState.Loading)
@@ -37,6 +38,15 @@ class ProjectFilesViewModel(
     fun uploadFile(projectId: String, selectedFile: SelectedFile) {
         viewModelScope.launch {
             _actionState.value = UiState.Loading
+            
+            // ENFORCE LIMIT: 10MB per file for Free users
+            val isPremium = billingRepository.isPremium.value
+            val fileSizeLimit = 10 * 1024 * 1024 // 10 MB
+            if (!isPremium && selectedFile.bytes.size > fileSizeLimit) {
+                _actionState.value = UiState.Error("Ücretsiz planda dosya boyutu 10MB ile sınırlıdır. Lütfen Premium'a yükseltin.")
+                return@launch
+            }
+
             repository.uploadFile(projectId, selectedFile.name, selectedFile.bytes).fold(
                 onSuccess = {
                     _actionState.value = UiState.Success(Unit)

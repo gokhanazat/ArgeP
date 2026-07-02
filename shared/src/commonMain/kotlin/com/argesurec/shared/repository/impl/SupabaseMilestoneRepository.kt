@@ -18,9 +18,11 @@ class SupabaseMilestoneRepository(
         emit(milestones)
     }
 
-    override fun getAll(): Flow<List<Milestone>> = flow {
+    override fun getAll(orgId: String): Flow<List<Milestone>> = flow {
         val milestones = supabase.from("milestones")
-            .select()
+            .select {
+                filter { eq("org_id", orgId) }
+            }
             .decodeList<Milestone>()
         emit(milestones)
     }

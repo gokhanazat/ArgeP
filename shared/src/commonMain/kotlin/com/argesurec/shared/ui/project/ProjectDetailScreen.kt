@@ -44,6 +44,7 @@ import com.argesurec.shared.viewmodel.ProjectsViewModel
 import com.argesurec.shared.viewmodel.ProjectsData
 import com.argesurec.shared.viewmodel.TeamViewModel
 import com.argesurec.shared.viewmodel.TeamData
+import com.argesurec.shared.util.strings
 
 private fun formatDate(date: String?): String {
     if (date.isNullOrBlank()) return "-"
@@ -120,81 +121,127 @@ class ProjectDetailScreen(private val projectId: String) : Screen {
 
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = {
-                        Column {
-                            Row(
-                                modifier = Modifier.clickable { navigator.pop() },
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Default.ArrowBack, null, modifier = Modifier.size(14.dp), tint = ArgepColors.Slate500)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Projeler", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(project?.name ?: "Yükleniyor...", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                Surface(
+                    color = ArgepColors.Navy900,
+                    shadowElevation = 8.dp
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
+                    ) {
+                        // Back Button & Parent Breadcrumb
+                        Row(
+                            modifier = Modifier
+                                .clickable { navigator.pop() }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.ArrowBack,
+                                null,
+                                modifier = Modifier.size(16.dp),
+                                tint = ArgepColors.Slate400
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                strings.projects.uppercase(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = ArgepColors.Slate400,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.sp
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = project?.name ?: strings.loadingProjects,
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
                                 if (project != null) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        PhaseBadge(project.phase)
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        StatusBadge(project.status ?: strings.active)
+                                    }
+                                }
+                            }
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Button(
+                                    onClick = { showEditDialog = true },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color.White.copy(alpha = 0.1f),
+                                        contentColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Icon(Icons.Default.Edit, null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    PhaseBadge(project.phase)
+                                    Text(strings.edit, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                }
+                                
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                when (activeTab) {
+                                    0 -> Button(
+                                        onClick = { showAddMilestoneDialog = true },
+                                        colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.ChartBlue),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(strings.addMilestone, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                    1 -> Button(
+                                        onClick = { filePicker.launch() },
+                                        colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.ChartEmerald),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Icon(Icons.Default.Share, null, modifier = Modifier.size(18.dp), tint = Color.White)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(strings.uploadFile, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                    }
+                                    2 -> Button(
+                                        onClick = { showAddExpenseDialog = true },
+                                        colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.ChartAmber),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Icon(Icons.Default.ShoppingCart, null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(strings.addExpense, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
                         }
-                    },
-                    actions = {
-                        Button(
-                            onClick = { showEditDialog = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.Slate200, contentColor = ArgepColors.Slate700),
-                            shape = RoundedCornerShape(7.dp)
-                        ) {
-                            Text("Düzenle", fontSize = 12.sp)
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        when (activeTab) {
-                            0 -> Button(
-                                onClick = { showAddMilestoneDialog = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.Navy700),
-                                shape = RoundedCornerShape(7.dp)
-                            ) {
-                                Text("+ Milestone Ekle", fontSize = 12.sp)
-                            }
-                            1 -> Button(
-                                onClick = { filePicker.launch() },
-                                colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.Phase3),
-                                shape = RoundedCornerShape(7.dp)
-                            ) {
-                                Text("+ Dosya Yükle", fontSize = 12.sp, color = Color.White)
-                            }
-                            2 -> Button(
-                                onClick = { showAddExpenseDialog = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.Navy700),
-                                shape = RoundedCornerShape(7.dp)
-                            ) {
-                                Text("+ Harcama Ekle", fontSize = 12.sp)
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = ArgepColors.White)
-                )
+                    }
+                }
             },
             snackbarHost = { SnackbarHost(snackbarHostState) },
             containerColor = ArgepColors.Slate100
         ) { padding ->
             when (val pState = projectsState) {
-                is UiState.Loading -> if (project == null) LoadingScreen("Proje bilgileri alınıyor...")
-                is UiState.Error -> ErrorScreen(pState.message, onRetry = { projectsViewModel.loadProjects(force = true) })
-                is UiState.Success -> {
-                    if (project == null) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Proje bulunamadı.", color = ArgepColors.Error)
-                                Button(onClick = { navigator.pop() }, modifier = Modifier.padding(top = 16.dp)) {
-                                    Text("Geri Dön")
-                                }
-                            }
-                        }
-                    } else {
+                                is UiState.Loading -> if (project == null) LoadingScreen(strings.loadingProjects)
+                                is UiState.Error -> ErrorScreen(pState.message, onRetry = { projectsViewModel.loadProjects(force = true) })
+                                is UiState.Success -> {
+                                    if (project == null) {
+                                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text(strings.noProjectsFound, color = ArgepColors.Error)
+                                                Button(onClick = { navigator.pop() }, modifier = Modifier.padding(top = 16.dp)) {
+                                                    Text(strings.back)
+                                                }
+                                            }
+                                        }
+                                    } else {
                         ProjectDetailContent(
                             padding = padding,
                             project = project!!,
@@ -290,37 +337,40 @@ fun ProjectDetailContent(
                 val progress = if ((project.budgetTotal ?: 0.0) > 0) ((project.budgetSpent ?: 0.0) / (project.budgetTotal ?: 1.0)).toFloat() else 0f
                 ProgressOverviewCard(project, progress.coerceIn(0f, 1f))
                 
-                // Tabs
-                TabRow(
-                    selectedTabIndex = activeTab,
-                    containerColor = Color.Transparent,
-                    contentColor = ArgepColors.Navy700,
-                    divider = {},
-                    indicator = { tabPositions ->
-                        TabRowDefaults.SecondaryIndicator(
-                            Modifier.tabIndicatorOffset(tabPositions[activeTab]),
-                            color = ArgepColors.Navy700
-                        )
-                    }
+                // Modern Tab Bar
+                Surface(
+                    color = ArgepColors.White,
+                    shape = RoundedCornerShape(12.dp),
+                    shadowElevation = 2.dp
                 ) {
-                    Tab(
-                        selected = activeTab == 0,
-                        onClick = { onTabChange(0) },
-                        text = { Text("Milestone'lar", fontSize = 12.sp) },
-                        icon = { Icon(Icons.Default.DateRange, null, modifier = Modifier.size(18.dp)) }
-                    )
-                    Tab(
-                        selected = activeTab == 1,
-                        onClick = { onTabChange(1) },
-                        text = { Text("Dosyalar", fontSize = 12.sp) },
-                        icon = { Icon(Icons.Default.Info, null, modifier = Modifier.size(18.dp)) }
-                    )
-                    Tab(
-                        selected = activeTab == 2,
-                        onClick = { onTabChange(2) },
-                        text = { Text("Harcamalar", fontSize = 12.sp) },
-                        icon = { Icon(Icons.Default.ShoppingCart, null, modifier = Modifier.size(18.dp)) }
-                    )
+                    TabRow(
+                        selectedTabIndex = activeTab,
+                        containerColor = Color.Transparent,
+                        contentColor = ArgepColors.Navy900,
+                        divider = {},
+                        indicator = { tabPositions ->
+                            Box(
+                                Modifier
+                                    .tabIndicatorOffset(tabPositions[activeTab])
+                                    .fillMaxHeight()
+                                    .padding(horizontal = 4.dp, vertical = 6.dp)
+                                    .background(ArgepColors.Slate100, RoundedCornerShape(8.dp))
+                            )
+                        }
+                    ) {
+                        listOf(
+                            Triple(strings.milestones, Icons.Default.DateRange, 0),
+                            Triple(strings.files, Icons.Default.Info, 1),
+                            Triple(strings.expenses, Icons.Default.ShoppingCart, 2)
+                        ).forEach { (label, icon, index) ->
+                            Tab(
+                                selected = activeTab == index,
+                                onClick = { onTabChange(index) },
+                                text = { Text(label, fontSize = 11.sp, fontWeight = if(activeTab == index) FontWeight.Bold else FontWeight.Normal) },
+                                icon = { Icon(icon, null, modifier = Modifier.size(16.dp)) }
+                            )
+                        }
+                    }
                 }
 
                 when(activeTab) {
@@ -329,70 +379,52 @@ fun ProjectDetailContent(
                     2 -> ExpensesCard(expenseState, onAddExpenseClick)
                 }
 
-                // Quick Action Cards
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Hızlı İşlemler", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = ArgepColors.Slate500)
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        QuickActionCard(
-                            title = "Milestone Ekle",
-                            icon = Icons.Default.DateRange,
-                            color = ArgepColors.Navy700,
-                            modifier = Modifier.weight(1f),
-                            onClick = { onAddMilestoneClick() }
-                        )
-                        QuickActionCard(
-                            title = "Harcama Ekle",
-                            icon = Icons.Default.ShoppingCart,
-                            color = ArgepColors.Phase3,
-                            modifier = Modifier.weight(1f),
-                            onClick = { onAddExpenseClick() }
-                        )
-                    }
-                }
-
                 InfoPanel(project, teamState)
             }
         } else {
             Row(
                 modifier = Modifier.fillMaxSize().padding(24.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 // LEFT COLUMN (Main Content)
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(modifier = Modifier.weight(1.6f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
                     val progress = if ((project.budgetTotal ?: 0.0) > 0) ((project.budgetSpent ?: 0.0) / (project.budgetTotal ?: 1.0)).toFloat() else 0f
                     ProgressOverviewCard(project, progress.coerceIn(0f, 1f))
 
-                    // Tabs
-                    TabRow(
-                        selectedTabIndex = activeTab,
-                        containerColor = Color.Transparent,
-                        contentColor = ArgepColors.Navy700,
-                        divider = {},
-                        indicator = { tabPositions ->
-                            TabRowDefaults.SecondaryIndicator(
-                                Modifier.tabIndicatorOffset(tabPositions[activeTab]),
-                                color = ArgepColors.Navy700
-                            )
-                        }
+                    // Modern Tab Bar
+                    Surface(
+                        color = ArgepColors.White,
+                        shape = RoundedCornerShape(12.dp),
+                        shadowElevation = 2.dp
                     ) {
-                        Tab(
-                            selected = activeTab == 0,
-                            onClick = { onTabChange(0) },
-                            text = { Text("Milestone'lar", fontSize = 12.sp) },
-                            icon = { Icon(Icons.Default.DateRange, null, modifier = Modifier.size(18.dp)) }
-                        )
-                        Tab(
-                            selected = activeTab == 1,
-                            onClick = { onTabChange(1) },
-                            text = { Text("Dosyalar", fontSize = 12.sp) },
-                            icon = { Icon(Icons.Default.Info, null, modifier = Modifier.size(18.dp)) }
-                        )
-                        Tab(
-                            selected = activeTab == 2,
-                            onClick = { onTabChange(2) },
-                            text = { Text("Harcamalar", fontSize = 12.sp) },
-                            icon = { Icon(Icons.Default.ShoppingCart, null, modifier = Modifier.size(18.dp)) }
-                        )
+                        TabRow(
+                            selectedTabIndex = activeTab,
+                            containerColor = Color.Transparent,
+                            contentColor = ArgepColors.Navy900,
+                            divider = {},
+                            indicator = { tabPositions ->
+                                Box(
+                                    Modifier
+                                        .tabIndicatorOffset(tabPositions[activeTab])
+                                        .fillMaxHeight()
+                                        .padding(horizontal = 4.dp, vertical = 6.dp)
+                                        .background(ArgepColors.Slate100, RoundedCornerShape(8.dp))
+                                )
+                            }
+                        ) {
+                            listOf(
+                                Triple(strings.milestones, Icons.Default.DateRange, 0),
+                                Triple(strings.files, Icons.Default.Info, 1),
+                                Triple(strings.expenses, Icons.Default.ShoppingCart, 2)
+                            ).forEach { (label, icon, index) ->
+                                Tab(
+                                    selected = activeTab == index,
+                                    onClick = { onTabChange(index) },
+                                    text = { Text(label, fontSize = 13.sp, fontWeight = if(activeTab == index) FontWeight.Bold else FontWeight.Normal) },
+                                    icon = { Icon(icon, null, modifier = Modifier.size(18.dp)) }
+                                )
+                            }
+                        }
                     }
 
                     when(activeTab) {
@@ -400,31 +432,10 @@ fun ProjectDetailContent(
                         1 -> FilesCard(project, filesState, actionState, onDeleteFile, onUploadClick)
                         2 -> ExpensesCard(expenseState, onAddExpenseClick)
                     }
-
-                    // Quick Action Cards
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Hızlı İşlemler", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = ArgepColors.Slate500)
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            QuickActionCard(
-                                title = "Milestone Ekle",
-                                icon = Icons.Default.DateRange,
-                                color = ArgepColors.Navy700,
-                                modifier = Modifier.weight(1f),
-                                onClick = { onAddMilestoneClick() }
-                            )
-                            QuickActionCard(
-                                title = "Harcama Ekle",
-                                icon = Icons.Default.ShoppingCart,
-                                color = ArgepColors.Phase3,
-                                modifier = Modifier.weight(1f),
-                                onClick = { onAddExpenseClick() }
-                            )
-                        }
-                    }
                 }
 
                 // RIGHT COLUMN (Info Panel)
-                Column(modifier = Modifier.width(320.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(modifier = Modifier.weight(0.9f), verticalArrangement = Arrangement.spacedBy(24.dp)) {
                     InfoPanel(project, teamState)
                 }
             }
@@ -440,23 +451,24 @@ fun MilestonesCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = ArgepColors.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(10.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, ArgepColors.Slate100)
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Text("Yol Haritası", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(16.dp))
+        Column(modifier = Modifier.padding(24.dp)) {
+            Text(strings.roadmap, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = ArgepColors.Navy900)
+            Spacer(modifier = Modifier.height(20.dp))
             
             when (val mState = milestoneState) {
-                is UiState.Loading -> Box(Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                is UiState.Loading -> Box(Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = ArgepColors.ChartBlue) }
                 is UiState.Error -> Text(mState.message, color = ArgepColors.Error)
                 is UiState.Success -> {
                     val milestones = mState.data.milestones
                     if (milestones.isEmpty()) {
-                        EmptyState("Henüz milestone eklenmemiş.")
+                        EmptyState(strings.noMilestones)
                     } else {
-                        Column {
-                            milestones.forEachIndexed { index, milestone ->
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            milestones.forEach { milestone ->
                                 MilestoneTimelineItem(milestone) {
                                     milestone.id?.let { onMilestoneClick(it) }
                                 }
@@ -480,26 +492,26 @@ fun FilesCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = ArgepColors.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(10.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, ArgepColors.Slate100)
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(modifier = Modifier.padding(24.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Proje Dosyaları", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text(strings.projectDocuments, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = ArgepColors.Navy900)
                 if (actionState is UiState.Loading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = ArgepColors.ChartBlue)
                 }
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // New Prominent Upload Area
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onUploadClick() },
                 color = ArgepColors.Slate50,
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(12.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, ArgepColors.Slate200)
             ) {
                 Column(
@@ -507,24 +519,24 @@ fun FilesCard(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Icon(Icons.Default.Share, contentDescription = null, tint = ArgepColors.Phase3, modifier = Modifier.size(32.dp))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Yeni Dosya Yükle", style = MaterialTheme.typography.titleSmall, color = ArgepColors.Navy900)
-                    Text("Dosya seçmek için tıklayın", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
+                    Icon(Icons.Default.Share, contentDescription = null, tint = ArgepColors.ChartBlue, modifier = Modifier.size(32.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(strings.uploadNewDocument, style = MaterialTheme.typography.titleSmall, color = ArgepColors.Navy900, fontWeight = FontWeight.Bold)
+                    Text(strings.uploadInstructions, style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             when (val fState = filesState) {
-                is UiState.Loading -> Box(Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                is UiState.Loading -> Box(Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = ArgepColors.ChartBlue) }
                 is UiState.Error -> Text(fState.message, color = ArgepColors.Error)
                 is UiState.Success -> {
                     val filesData = fState.data
                     if (filesData.files.isEmpty()) {
-                        EmptyState("Bu projeye ait dosya bulunamadı.")
+                        EmptyState(strings.noDocumentsFound)
                     } else {
-                        Column {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             filesData.files.forEach { file ->
                                 ProjectFileItem(file) {
                                     onDeleteFile("projects/${project.id}/${file.name}")
@@ -543,25 +555,31 @@ fun InfoPanel(
     project: Project,
     teamState: UiState<TeamData>
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
         // Info Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = ArgepColors.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            shape = RoundedCornerShape(10.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            shape = RoundedCornerShape(16.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, ArgepColors.Slate100)
         ) {
-            Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Proje Bilgileri", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(strings.details, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = ArgepColors.Navy900)
                 
-                DetailRow("Durum", { StatusBadge(project.status ?: "Aktif") })
-                DetailRow("Başlangıç", { Text(formatDate(project.startDate ?: project.createdAt), style = MaterialTheme.typography.bodyMedium) })
-                DetailRow("Bütçe", { Text("${project.budgetSpent} / ${project.budgetTotal} ₺", style = MaterialTheme.typography.bodyMedium) })
-                DetailRow("Faz", { PhaseBadge(project.phase) })
+                DetailRow(strings.currentStatus, { StatusBadge(project.status ?: strings.active) })
+                DetailRow(strings.startDate, { Text(formatDate(project.startDate ?: project.createdAt), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold) })
+                DetailRow(strings.totalBudget, { Text("${project.budgetTotal} ${strings.currencySymbol}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = ArgepColors.ChartBlue) })
+                DetailRow(strings.spent, { Text("${project.budgetSpent} ${strings.currencySymbol}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = ArgepColors.ChartAmber) })
 
                 HorizontalDivider(color = ArgepColors.Slate100)
                 
-                Text(project.description ?: "Açıklama belirtilmemiş.", style = MaterialTheme.typography.bodyMedium, color = ArgepColors.Slate600)
+                Text(
+                    project.description ?: strings.noProjectDescription,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = ArgepColors.Slate600,
+                    lineHeight = 20.sp
+                )
             }
         }
 
@@ -569,13 +587,13 @@ fun InfoPanel(
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = ArgepColors.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            shape = RoundedCornerShape(10.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            shape = RoundedCornerShape(16.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, ArgepColors.Slate100)
         ) {
             var showInviteDialog by remember { mutableStateOf(false) }
             val navigator = LocalNavigator.currentOrThrow
             val teamViewModel = koinViewModel<TeamViewModel>()
-            val isActionLoading by teamViewModel.isActionLoading.collectAsState()
 
             if (showInviteDialog) {
                 com.argesurec.shared.ui.team.InviteMemberDialog(
@@ -587,53 +605,45 @@ fun InfoPanel(
                 )
             }
 
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(modifier = Modifier.padding(24.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Proje Ekibi", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(strings.projectTeam, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = ArgepColors.Navy900)
                     IconButton(
-                        onClick = { 
-                            showInviteDialog = true 
-                        },
-                        modifier = Modifier.size(32.dp).background(ArgepColors.Navy700, CircleShape)
+                        onClick = { showInviteDialog = true },
+                        modifier = Modifier.size(32.dp).background(ArgepColors.ChartBlue, CircleShape)
                     ) {
                         Icon(Icons.Default.Add, null, tint = Color.White, modifier = Modifier.size(16.dp))
                     }
                 }
                 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 
                 when (val tState = teamState) {
-                    is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    is UiState.Loading -> Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = ArgepColors.ChartBlue) }
                     is UiState.Error -> Text(tState.message, color = ArgepColors.Error)
                     is UiState.Success -> {
                         val members = tState.data.members
                         if (members.isEmpty()) {
-                            EmptyState("Henüz üye eklenmemiş.")
+                            EmptyState(strings.noTeamMembers)
                         } else {
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 members.take(5).forEach { member ->
-                                    TeamMemberAvatarRow(member.profile?.fullName ?: "Bilinmiyor", member.role ?: "Üye")
+                                    TeamMemberAvatarRow(member.profile?.fullName ?: strings.unknown, member.role ?: strings.member)
                                 }
                                 
-                                if (members.size > 5) {
-                                    TextButton(
-                                        onClick = { navigator.push(com.argesurec.shared.ui.team.TeamScreen(project.id)) },
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text("Tümünü Gör (${members.size})", color = ArgepColors.Navy700)
-                                    }
-                                } else {
-                                    // Az üye olsa bile detaylı yönetime gitmek isteyebilir
-                                    TextButton(
-                                        onClick = { navigator.push(com.argesurec.shared.ui.team.TeamScreen(project.id)) },
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text("Ekibi Yönet", color = ArgepColors.Navy700)
-                                    }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                Button(
+                                    onClick = { navigator.push(com.argesurec.shared.ui.team.TeamScreen(project.id)) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.Slate50, contentColor = ArgepColors.Navy900),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text("${strings.manageTeam} (${members.size})", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                                 }
                             }
                         }
@@ -668,10 +678,10 @@ fun ProjectFileItem(file: io.github.jan.supabase.storage.FileObject, onDelete: (
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             IconButton(onClick = { /* İndirme henüz eklenmedi */ }) {
-                Icon(Icons.Default.Share, contentDescription = "İndir", tint = ArgepColors.Slate600)
+                Icon(Icons.Default.Share, contentDescription = strings.download, tint = ArgepColors.Slate600)
             }
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Sil", tint = ArgepColors.Error)
+                Icon(Icons.Default.Delete, contentDescription = strings.delete, tint = ArgepColors.Error)
             }
         }
     }
@@ -682,25 +692,54 @@ fun ProgressOverviewCard(project: com.argesurec.shared.model.Project, progress: 
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = ArgepColors.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(10.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, ArgepColors.Slate100)
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(modifier = Modifier.padding(24.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Genel İlerleme", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("${(progress * 100).toInt()}%", style = MaterialTheme.typography.headlineMedium, color = ArgepColors.Phase3)
+                Column {
+                    Text(strings.overallProjectProgress, style = MaterialTheme.typography.labelMedium, color = ArgepColors.Slate500, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("${(progress * 100).toInt()}% ${strings.completed}", style = MaterialTheme.typography.headlineSmall, color = ArgepColors.Navy900, fontWeight = FontWeight.ExtraBold)
+                }
+                
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(60.dp)) {
+                    CircularProgressIndicator(
+                        progress = progress,
+                        modifier = Modifier.fillMaxSize(),
+                        color = ArgepColors.ChartEmerald,
+                        trackColor = ArgepColors.Slate100,
+                        strokeWidth = 6.dp
+                    )
+                    Text("${(progress * 100).toInt()}%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ArgepColors.ChartEmerald)
+                }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
             LinearProgressIndicator(
                 progress = progress,
-                modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)),
-                color = ArgepColors.Phase3,
-                trackColor = ArgepColors.Slate200
+                modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                color = ArgepColors.ChartEmerald,
+                trackColor = ArgepColors.Slate100
             )
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("📅 Başlangıç: ${formatDate(project.startDate ?: project.createdAt)}", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
-                Text("🎯 Bitiş: ${formatDate(project.endDate)}", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                Column {
+                    Text(strings.startDate.uppercase(), style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate400)
+                    Text(formatDate(project.startDate ?: project.createdAt), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                }
+                Column {
+                    Text(strings.targetEndDate.uppercase(), style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate400)
+                    Text(formatDate(project.endDate), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                }
+                Column {
+                    Text(strings.currentStatus.uppercase(), style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate400)
+                    StatusBadge(project.status ?: strings.active)
+                }
             }
         }
     }
@@ -716,9 +755,9 @@ fun MilestoneTimelineItem(milestone: Milestone, onClick: () -> Unit) {
         Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(ArgepColors.Phase3))
         Column(modifier = Modifier.weight(1f)) {
             Text(milestone.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
-            Text(milestone.dueDate ?: "Tarih Belirtilmedi", style = MaterialTheme.typography.bodySmall, color = ArgepColors.Slate500)
+            Text(milestone.dueDate ?: strings.noDateSpecified, style = MaterialTheme.typography.bodySmall, color = ArgepColors.Slate500)
         }
-        StatusBadge(milestone.status ?: "Bekliyor")
+        StatusBadge(milestone.status ?: strings.waiting)
     }
 }
 
@@ -764,10 +803,10 @@ fun TeamMemberAvatarRow(name: String, role: String) {
 @Composable
 fun PhaseBadge(phase: com.argesurec.shared.model.ProjectPhase?) {
     val phaseName = when (phase) {
-        com.argesurec.shared.model.ProjectPhase.INCUBATION -> "Kuluçka"
-        com.argesurec.shared.model.ProjectPhase.DEVELOPMENT -> "Geliştirme"
-        com.argesurec.shared.model.ProjectPhase.COMMERCIALIZATION -> "Ticarileşme"
-        else -> "Belirsiz"
+        com.argesurec.shared.model.ProjectPhase.INCUBATION -> strings.incubation
+        com.argesurec.shared.model.ProjectPhase.DEVELOPMENT -> strings.development
+        com.argesurec.shared.model.ProjectPhase.COMMERCIALIZATION -> strings.commercialization
+        else -> strings.unknown
     }
 
     val phaseColor = when (phase) {
@@ -789,13 +828,20 @@ fun PhaseBadge(phase: com.argesurec.shared.model.ProjectPhase?) {
 
 @Composable
 fun StatusBadge(status: String) {
-    val color = when (status) {
-        "Tamamlandı", "Devam" -> ArgepColors.Phase3
-        "Bekliyor" -> ArgepColors.Slate500
-        else -> ArgepColors.Error
+    val (color, bgColor) = when (status) {
+        strings.completed, strings.done -> ArgepColors.ChartEmerald to ArgepColors.ChartEmerald.copy(alpha = 0.1f)
+        strings.waiting, strings.todo -> ArgepColors.Slate500 to ArgepColors.Slate100
+        else -> ArgepColors.Error to ArgepColors.Error.copy(alpha = 0.1f)
     }
-    Surface(color = ArgepColors.Slate100, shape = RoundedCornerShape(20.dp), border = androidx.compose.foundation.BorderStroke(1.dp, ArgepColors.Slate200)) {
-        Text(status, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = color)
+    Surface(color = bgColor, shape = RoundedCornerShape(8.dp)) {
+        Text(
+            status.uppercase(),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 0.5.sp
+        )
     }
 }
 
@@ -807,8 +853,9 @@ fun ExpensesCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = ArgepColors.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(16.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, ArgepColors.Slate100)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
             Row(
@@ -817,45 +864,48 @@ fun ExpensesCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("Bütçe ve Harcamalar", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = ArgepColors.Navy900)
-                    Text("Aylık harcama dağılımı", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
+                    Text(strings.financialTracking, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = ArgepColors.Navy900)
+                    Text(strings.budgetAnalysis, style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
                 }
-                Button(
+                
+                Surface(
                     onClick = onAddClick,
-                    colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.Navy700),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                    color = ArgepColors.ChartAmber,
+                    shape = RoundedCornerShape(10.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Harcama Ekle", fontSize = 12.sp)
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp), tint = ArgepColors.Navy900)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(strings.addExpense, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ArgepColors.Navy900)
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             when(expenseState) {
-                is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-                is UiState.Error -> Text("Hata: ${expenseState.message}", color = ArgepColors.Error)
+                is UiState.Loading -> Box(Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = ArgepColors.ChartAmber) }
+                is UiState.Error -> Text("${strings.error}: ${expenseState.message}", color = ArgepColors.Error)
                 is UiState.Success -> {
                     val data = expenseState.data
                     
-                    // Grafik Bölümü
                     if (data.expenses.isNotEmpty()) {
                         ExpenseLineChart(data.expenses)
-                        Spacer(modifier = Modifier.height(24.dp))
-                    }
-
-                    // Liste Bölümü
-                    if (data.expenses.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
-                            Text("Henüz bir harcama kaydı yok.", color = ArgepColors.Slate400, style = MaterialTheme.typography.bodySmall)
+                        Spacer(modifier = Modifier.height(32.dp))
+                        
+                        Text(strings.recentExpenses, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = ArgepColors.Slate400, letterSpacing = 1.sp)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            data.expenses.take(10).forEach { expense ->
+                                ExpenseItem(expense)
+                            }
                         }
                     } else {
-                        data.expenses.forEach { expense ->
-                            ExpenseItem(expense)
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = ArgepColors.Slate100)
-                        }
+                        EmptyState(strings.noExpensesFound)
                     }
                 }
             }
@@ -870,14 +920,14 @@ fun ExpenseLineChart(expenses: List<com.argesurec.shared.model.Expense>) {
         .entries.sortedBy { it.key }.map { it.value }
 
     if (chartData.size < 2) {
-        Text("Grafik için daha fazla kayıt gerekli", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate400)
+        Text(strings.moreRecordsForChart, style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate400)
         return
     }
 
     val maxAmount = chartData.maxOrNull()?.toFloat() ?: 1f
 
     Column {
-        Text("HARCAMA TRENDİ", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = ArgepColors.Slate500)
+        Text(strings.expenseTrend, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = ArgepColors.Slate500)
         Spacer(modifier = Modifier.height(16.dp))
         Canvas(modifier = Modifier.fillMaxWidth().height(120.dp)) {
             val width = size.width
@@ -904,45 +954,50 @@ fun ExpenseLineChart(expenses: List<com.argesurec.shared.model.Expense>) {
 
 @Composable
 fun ExpenseItem(expense: com.argesurec.shared.model.Expense) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Surface(
-            modifier = Modifier.size(40.dp),
-            color = when(expense.category) {
-                "Personel" -> ArgepColors.Phase1.copy(alpha = 0.1f)
-                "Yazılım" -> ArgepColors.Phase2.copy(alpha = 0.1f)
-                "Donanım" -> ArgepColors.Phase3.copy(alpha = 0.1f)
-                else -> ArgepColors.Slate100
-            },
-            shape = RoundedCornerShape(8.dp)
+    Surface(
+        color = ArgepColors.Slate50,
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = when(expense.category) {
-                        "Personel" -> Icons.Default.Person
-                        "Yazılım" -> Icons.Default.Settings
-                        "Donanım" -> Icons.Default.Build
-                        else -> Icons.Default.Info
-                    },
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = when(expense.category) {
-                        "Personel" -> ArgepColors.Phase1
-                        "Yazılım" -> ArgepColors.Phase2
-                        "Donanım" -> ArgepColors.Phase3
-                        else -> ArgepColors.Slate500
-                    }
-                )
+            val (iconColor, bgColor) = when(expense.category) {
+                strings.personnel -> ArgepColors.ChartBlue to ArgepColors.ChartBlue.copy(alpha = 0.1f)
+                strings.software -> ArgepColors.ChartEmerald to ArgepColors.ChartEmerald.copy(alpha = 0.1f)
+                strings.hardware -> ArgepColors.ChartAmber to ArgepColors.ChartAmber.copy(alpha = 0.1f)
+                else -> ArgepColors.Slate500 to ArgepColors.Slate100
             }
+
+            Surface(
+                modifier = Modifier.size(40.dp),
+                color = bgColor,
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = when(expense.category) {
+                            strings.personnel -> Icons.Default.Person
+                            strings.software -> Icons.Default.Settings
+                            strings.hardware -> Icons.Default.Build
+                            else -> Icons.Default.Info
+                        },
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = iconColor
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(expense.description ?: strings.noDescription, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = ArgepColors.Navy900)
+                Text("${expense.category} • ${expense.expenseDate?.take(10) ?: "-"}", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
+            }
+            
+            Text("${strings.currencySymbol}${expense.amount.toInt()}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = ArgepColors.Navy900)
         }
-        
-        Spacer(modifier = Modifier.width(12.dp))
-        
-        Column(modifier = Modifier.weight(1f)) {
-            Text(expense.description ?: "Açıklama yok", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = ArgepColors.Navy900)
-            Text("${expense.category} • ${expense.expenseDate?.take(10) ?: "-"}", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
-        }
-        
-        Text("₺${expense.amount.toInt()}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = ArgepColors.Navy900)
     }
 }
 
@@ -954,8 +1009,9 @@ fun AddExpenseDialog(
 ) {
     var amount by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf("Yazılım") }
-    val categories = listOf("Personel", "Yazılım", "Donanım", "Hizmet", "Diğer")
+    val initialCategory = strings.software
+    var selectedCategory by remember { mutableStateOf(initialCategory) }
+    val categories = listOf(strings.personnel, strings.software, strings.hardware, strings.service, strings.other)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -964,7 +1020,7 @@ fun AddExpenseDialog(
                 OutlinedTextField(
                     value = amount,
                     onValueChange = { if(it.all { c -> c.isDigit() || c == '.' }) amount = it },
-                    label = { Text("Miktar (₺)") },
+                    label = { Text("${strings.budget} (${strings.currencySymbol})") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp)
                 )
@@ -974,13 +1030,13 @@ fun AddExpenseDialog(
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("Açıklama") },
+                    label = { Text(strings.descriptionLabel) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("KATEGORİ", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Text(strings.categoryLabel, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1005,11 +1061,11 @@ fun AddExpenseDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.Navy700),
                 enabled = amount.isNotBlank() && description.isNotBlank()
             ) {
-                Text("Kaydet")
+                Text(strings.save)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Vazgeç") }
+            TextButton(onClick = onDismiss) { Text(strings.cancel) }
         }
     )
 }
@@ -1028,28 +1084,28 @@ fun EditProjectDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Projeyi Düzenle") },
+        title = { Text(strings.editProject) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Proje Adı") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Açıklama") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(strings.projectName) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text(strings.descriptionLabel) }, modifier = Modifier.fillMaxWidth())
                 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = budgetTotal, 
                         onValueChange = { if(it.all { c -> c.isDigit() || c == '.' }) budgetTotal = it }, 
-                        label = { Text("Toplam Bütçe") }, 
+                        label = { Text(strings.totalBudget) }, 
                         modifier = Modifier.weight(1f)
                     )
                     OutlinedTextField(
                         value = budgetSpent, 
                         onValueChange = { if(it.all { c -> c.isDigit() || c == '.' }) budgetSpent = it }, 
-                        label = { Text("Harcanan Bütçe") }, 
+                        label = { Text(strings.currentSpending) }, 
                         modifier = Modifier.weight(1f)
                     )
                 }
 
-                Text("PROJE AŞAMASI", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = ArgepColors.Slate500)
+                Text(strings.projectPhaseLabel, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = ArgepColors.Slate500)
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     com.argesurec.shared.model.ProjectPhase.entries.forEach { phase ->
                         Row(
@@ -1063,9 +1119,9 @@ fun EditProjectDialog(
                             RadioButton(selected = selectedPhase == phase, onClick = { selectedPhase = phase })
                             Text(
                                 when(phase) {
-                                    com.argesurec.shared.model.ProjectPhase.INCUBATION -> "Kuluçka"
-                                    com.argesurec.shared.model.ProjectPhase.DEVELOPMENT -> "Geliştirme"
-                                    com.argesurec.shared.model.ProjectPhase.COMMERCIALIZATION -> "Ticarileşme"
+                                    com.argesurec.shared.model.ProjectPhase.INCUBATION -> strings.incubation
+                                    com.argesurec.shared.model.ProjectPhase.DEVELOPMENT -> strings.development
+                                    com.argesurec.shared.model.ProjectPhase.COMMERCIALIZATION -> strings.commercialization
                                 },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = if (selectedPhase == phase) ArgepColors.Navy900 else ArgepColors.Slate600
@@ -1085,11 +1141,11 @@ fun EditProjectDialog(
                     budgetSpent = budgetSpent.toDoubleOrNull() ?: 0.0
                 )) 
             }) {
-                Text("Güncelle")
+                Text(strings.update)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("İptal") }
+            TextButton(onClick = onDismiss) { Text(strings.cancel) }
         }
     )
 }
@@ -1104,22 +1160,22 @@ fun AddMilestoneDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Yeni Milestone Ekle") },
+        title = { Text(strings.addMilestone) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Milestone Başlığı") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = dueDate, onValueChange = { dueDate = it }, label = { Text("Teslim Tarihi (GG/AA/YYYY)") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text(strings.milestoneTitleLabel) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = dueDate, onValueChange = { dueDate = it }, label = { Text("${strings.targetEndDate} (DD/MM/YYYY)") }, modifier = Modifier.fillMaxWidth())
             }
         },
         confirmButton = {
             Button(onClick = { 
                 onCreate(title, dueDate.ifEmpty { null }) 
             }) {
-                Text("Ekle")
+                Text(strings.add)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("İptal") }
+            TextButton(onClick = onDismiss) { Text(strings.cancel) }
         }
     )
 }

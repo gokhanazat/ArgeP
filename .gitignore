@@ -5,6 +5,8 @@ local.properties
 .env
 *.hprof
 *.txt
+*.log
+
 
 # Kotlin Multiplatform
 .kotlin/

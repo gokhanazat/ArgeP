@@ -31,11 +31,13 @@ import com.argesurec.shared.ui.theme.ArgepColors
 import com.argesurec.shared.util.ProjectRole
 import com.argesurec.shared.util.UiState
 import com.argesurec.shared.viewmodel.TeamViewModel
+import com.argesurec.shared.util.strings
 
 class TeamScreen(private val projectId: String?) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
+        val s = strings
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = koinViewModel<TeamViewModel>()
         val state by viewModel.state.collectAsState()
@@ -76,7 +78,7 @@ class TeamScreen(private val projectId: String?) : Screen {
 
         if (memberToDelete != null) {
             DeleteMemberDialog(
-                memberName = memberToDelete?.profile?.fullName ?: "Bu üye",
+                memberName = memberToDelete?.profile?.fullName ?: s.unnamed,
                 onDismiss = { memberToDelete = null },
                 onConfirm = {
                     viewModel.removeMember(memberToDelete!!.userId)
@@ -97,117 +99,125 @@ class TeamScreen(private val projectId: String?) : Screen {
         }
 
         Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Column {
-                            Text("Ekip Yönetimi (PROJE MODU)", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = ArgepColors.Navy900)
-                            Text(if (projectId != null) "Projeye Dahil Üyeler" else "Tüm Ekip Üyeleri", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = ArgepColors.White),
-                    navigationIcon = {
-                        IconButton(onClick = { navigator.pop() }) {
-                            Icon(Icons.Default.ArrowBack, "Geri", tint = ArgepColors.Navy900)
-                        }
-                    }
-                )
-            },
             snackbarHost = { SnackbarHost(snackbarHostState) },
-            containerColor = ArgepColors.Slate50
+            containerColor = ArgepColors.Slate50,
+            contentWindowInsets = WindowInsets(0.dp)
         ) { padding ->
-            when (val uiState = state) {
-                is UiState.Loading -> LoadingScreen("Ekip listeleniyor...")
-                is UiState.Error -> ErrorScreen(uiState.message, onRetry = { viewModel.loadTeam() })
-                is UiState.Success -> {
-                    val members = if (searchQuery.isEmpty()) {
-                        uiState.data.members
-                    } else {
-                        uiState.data.members.filter { it.profile?.fullName?.contains(searchQuery, true) == true }
-                    }
-                    
-                    Column(modifier = Modifier.padding(padding).fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp)) {
-                        // Action Bar (Search & Invite)
+            Column(modifier = Modifier.padding(bottom = padding.calculateBottomPadding()).fillMaxSize()) {
+                // PROFESSIONAL HEADER
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                colors = listOf(ArgepColors.Navy900, ArgepColors.ChartBlue.copy(alpha = 0.8f))
+                            ),
+                            shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
+                        )
+                ) {
+                    Column(modifier = Modifier.statusBarsPadding().padding(bottom = 32.dp)) {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            OutlinedTextField(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                placeholder = { Text("Üye ara...", fontSize = 14.sp, color = ArgepColors.Slate400) },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp),
-                                leadingIcon = { Icon(Icons.Default.Search, null, modifier = Modifier.size(20.dp), tint = ArgepColors.Slate400) },
-                                singleLine = true,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = ArgepColors.Navy300,
-                                    unfocusedBorderColor = ArgepColors.Slate200,
-                                    focusedContainerColor = ArgepColors.White,
-                                    unfocusedContainerColor = ArgepColors.White
-                                )
-                            )
+                            Column {
+                                Text(s.team.uppercase(), style = MaterialTheme.typography.labelSmall, color = ArgepColors.Navy300, letterSpacing = 1.sp)
+                                Text(s.teamManagement, style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = ArgepColors.White)
+                            }
                             
                             if (projectId != null) {
                                 Button(
                                     onClick = { if (!isActionLoading) showInviteDialog = true },
-                                    modifier = Modifier.height(48.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.Navy700),
-                                    shape = RoundedCornerShape(10.dp),
-                                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.ChartBlue),
                                     enabled = !isActionLoading
                                 ) {
                                     if (isActionLoading) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(18.dp),
-                                            color = androidx.compose.ui.graphics.Color.White,
-                                            strokeWidth = 2.dp
-                                        )
+                                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
                                     } else {
-                                        Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                                        Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(20.dp))
                                     }
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Yeni Üye Ekle", style = MaterialTheme.typography.labelLarge)
+                                    Text(s.addNewMember)
                                 }
-                            } else {
-                                // Eklenemez uyarısı veya boşluk
-                                Text("Üye eklemek için proje seçin", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate400)
                             }
                         }
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        // Search Bar In Header Area
+                        Box(modifier = Modifier.padding(horizontal = 24.dp)) {
+                            Surface(
+                                color = ArgepColors.Navy800,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth(0.6f)
+                            ) {
+                                TextField(
+                                    value = searchQuery,
+                                    onValueChange = { searchQuery = it },
+                                    placeholder = { Text(s.searchMember, color = ArgepColors.Navy300) },
+                                    leadingIcon = { Icon(Icons.Default.Search, null, tint = ArgepColors.Navy300) },
+                                    colors = TextFieldDefaults.colors(
+                                        focusedContainerColor = Color.Transparent,
+                                        unfocusedContainerColor = Color.Transparent,
+                                        disabledContainerColor = Color.Transparent,
+                                        focusedIndicatorColor = Color.Transparent,
+                                        unfocusedIndicatorColor = Color.Transparent,
+                                        focusedTextColor = Color.White,
+                                        unfocusedTextColor = Color.White
+                                    ),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                    }
+                }
 
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, ArgepColors.Slate100),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Column {
-                                // Table Header
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().background(ArgepColors.Slate50).padding(horizontal = 20.dp, vertical = 14.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("ÜYE / PERSONEL", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp), color = ArgepColors.Slate500, modifier = Modifier.weight(2f))
-                                    Text("ROL", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp), color = ArgepColors.Slate500, modifier = Modifier.weight(1f))
-                                    Text("KATILMA", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp), color = ArgepColors.Slate500, modifier = Modifier.weight(1f))
-                                    Text("İŞLEMLER", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp), color = ArgepColors.Slate500, modifier = Modifier.width(80.dp), textAlign = androidx.compose.ui.text.style.TextAlign.End)
-                                }
-                                
-                                if (members.isEmpty()) {
-                                    Box(modifier = Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
-                                        Text("Sonuç bulunamadı", color = ArgepColors.Slate400, style = MaterialTheme.typography.bodyMedium)
+                when (val uiState = state) {
+                    is UiState.Loading -> LoadingScreen(s.loadingTeam)
+                    is UiState.Error -> ErrorScreen(uiState.message, onRetry = { viewModel.loadTeam() })
+                    is UiState.Success -> {
+                        val members = if (searchQuery.isEmpty()) {
+                            uiState.data.members
+                        } else {
+                            uiState.data.members.filter { it.profile?.fullName?.contains(searchQuery, true) == true }
+                        }
+                        
+                        Column(modifier = Modifier.fillMaxSize().padding(32.dp)) {
+                            Surface(
+                                color = Color.White,
+                                shape = RoundedCornerShape(16.dp),
+                                shadowElevation = 2.dp,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column {
+                                    // Modern Table Header
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().background(ArgepColors.Slate50).padding(horizontal = 24.dp, vertical = 16.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(s.memberPersonnel.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold), color = ArgepColors.Slate500, modifier = Modifier.weight(2f))
+                                        Text(s.role.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold), color = ArgepColors.Slate500, modifier = Modifier.weight(1f))
+                                        Text(s.joined.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold), color = ArgepColors.Slate500, modifier = Modifier.weight(1f))
+                                        Text(s.actions.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold), color = ArgepColors.Slate500, modifier = Modifier.width(100.dp), textAlign = androidx.compose.ui.text.style.TextAlign.End)
                                     }
-                                } else {
-                                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                                        items(members) { member ->
-                                            TeamMemberTableRow(
-                                                member = member,
-                                                onEdit = { memberToEditRole = member },
-                                                onDelete = { memberToDelete = member }
-                                            )
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), color = ArgepColors.Slate100)
+                                    
+                                    if (members.isEmpty()) {
+                                        Box(modifier = Modifier.fillMaxWidth().padding(64.dp), contentAlignment = Alignment.Center) {
+                                            Text(s.noResultsFound, color = ArgepColors.Slate400, style = MaterialTheme.typography.bodyLarge)
+                                        }
+                                    } else {
+                                        LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                                            items(members) { member ->
+                                                TeamMemberTableRow(
+                                                    member = member,
+                                                    onEdit = { memberToEditRole = member },
+                                                    onDelete = { memberToDelete = member }
+                                                )
+                                                HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp), color = ArgepColors.Slate100)
+                                            }
                                         }
                                     }
                                 }
@@ -227,19 +237,24 @@ fun TeamMemberTableRow(
     onDelete: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 20.dp, vertical = 16.dp),
+        modifier = Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 24.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Name & Profile
-        Row(modifier = Modifier.weight(2f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Surface(modifier = Modifier.size(36.dp), shape = CircleShape, color = ArgepColors.Navy600) {
+        Row(modifier = Modifier.weight(2f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Surface(modifier = Modifier.size(44.dp), shape = CircleShape, color = ArgepColors.Slate100) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text(member.profile?.fullName?.take(1) ?: "?", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        member.profile?.fullName?.take(1)?.uppercase() ?: "?", 
+                        color = ArgepColors.Navy900, 
+                        fontSize = 16.sp, 
+                        fontWeight = FontWeight.ExtraBold
+                    )
                 }
             }
             Column {
-                Text(member.profile?.fullName ?: "İsimsiz", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = ArgepColors.Navy900)
-                Text(member.profile?.department ?: "Ar-Ge Departmanı", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
+                Text(member.profile?.fullName ?: strings.unnamed, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold), color = ArgepColors.Navy900)
+                Text(member.profile?.department ?: strings.argeDepartment, style = MaterialTheme.typography.bodySmall, color = ArgepColors.Slate500)
             }
         }
 
@@ -247,26 +262,35 @@ fun TeamMemberTableRow(
         Box(modifier = Modifier.weight(1f)) {
             val roleEnum = try { ProjectRole.valueOf(member.role ?: "GOZLEMCI") } catch (e: Exception) { ProjectRole.GOZLEMCI }
             val roleColor = when (roleEnum) {
-                ProjectRole.PROJE_MUDURU -> ArgepColors.Navy900
-                ProjectRole.TEKNIK_LIDER -> ArgepColors.Phase1
-                ProjectRole.ARGE_UZMANI -> Color(0xFF8B5CF6) // Purple
-                ProjectRole.TEST_MUHENDISI -> ArgepColors.Phase3
-                ProjectRole.MALI_UZMAN -> ArgepColors.Phase2
+                ProjectRole.PROJE_MUDURU -> ArgepColors.ChartBlue
+                ProjectRole.TEKNIK_LIDER -> ArgepColors.ChartAmber
+                ProjectRole.ARGE_UZMANI -> Color(0xFF8B5CF6)
+                ProjectRole.TEST_MUHENDISI -> ArgepColors.ChartEmerald
+                ProjectRole.MALI_UZMAN -> ArgepColors.ChartRose
                 else -> ArgepColors.Slate500
             }
-            Surface(color = roleColor.copy(alpha = 0.1f), shape = RoundedCornerShape(20.dp), border = androidx.compose.foundation.BorderStroke(1.dp, roleColor.copy(alpha = 0.3f))) {
-                Text(member.role?.replace("_", " ") ?: "Üye", modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium), color = roleColor)
+            Surface(color = roleColor.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
+                Text(
+                    member.role?.replace("_", " ") ?: "Üye", 
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), 
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), 
+                    color = roleColor
+                )
             }
         }
 
         // Joined Date
-        val joinedDate = member.joinedAt.split("T").firstOrNull() ?: "Bilinmiyor"
-        Text(joinedDate, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = ArgepColors.Slate500)
+        val joinedDate = member.joinedAt.split("T").firstOrNull() ?: strings.unknown
+        Text(joinedDate, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = ArgepColors.Slate600)
 
         // Actions
-        Row(modifier = Modifier.width(80.dp), horizontalArrangement = Arrangement.End) {
-            IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Edit, null, modifier = Modifier.size(16.dp), tint = ArgepColors.Slate400) }
-            IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Delete, null, modifier = Modifier.size(16.dp), tint = ArgepColors.Error.copy(alpha = 0.7f)) }
+        Row(modifier = Modifier.width(100.dp), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onEdit, modifier = Modifier.size(40.dp)) { 
+                Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp), tint = ArgepColors.Slate400) 
+            }
+            IconButton(onClick = onDelete, modifier = Modifier.size(40.dp)) { 
+                Icon(Icons.Default.DeleteOutline, null, modifier = Modifier.size(18.dp), tint = ArgepColors.ChartRose.copy(alpha = 0.8f)) 
+            }
         }
     }
 }
@@ -283,16 +307,16 @@ fun InviteMemberDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Ekibe Yeni Üye Ekle", fontWeight = FontWeight.Bold) },
+        title = { Text(strings.addMemberToTeam, fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("Üyenin e-posta adresini girin ve bir proje rolü atayın.", style = MaterialTheme.typography.bodySmall, color = ArgepColors.Slate500)
+                Text(strings.enterEmailAndAssignRole, style = MaterialTheme.typography.bodySmall, color = ArgepColors.Slate500)
                 
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("E-posta Adresi") },
-                    placeholder = { Text("ornek@sirket.com") },
+                    label = { Text(strings.emailAddress) },
+                    placeholder = { Text(strings.emailPlaceholder) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
@@ -305,7 +329,7 @@ fun InviteMemberDialog(
                         value = selectedRole.name.replace("_", " "),
                         onValueChange = { },
                         readOnly = true,
-                        label = { Text("Proje Rolü") },
+                        label = { Text(strings.projectRole) },
                         modifier = Modifier.fillMaxWidth().clickable { expanded = true },
                         shape = RoundedCornerShape(8.dp),
                         trailingIcon = {
@@ -339,12 +363,12 @@ fun InviteMemberDialog(
                 shape = RoundedCornerShape(10.dp),
                 enabled = email.isNotEmpty()
             ) {
-                Text("Ekle")
+                Text(strings.add)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("İptal", color = ArgepColors.Slate500)
+                Text(strings.cancel, color = ArgepColors.Slate500)
             }
         },
         containerColor = Color.White
@@ -359,20 +383,20 @@ fun DeleteMemberDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Üyeyi Çıkar", fontWeight = FontWeight.Bold) },
-        text = { Text("$memberName isimli üyeyi projeden çıkarmak istediğinize emin misiniz?", style = MaterialTheme.typography.bodyMedium, color = ArgepColors.Slate600) },
+        title = { Text(strings.removeMember, fontWeight = FontWeight.Bold) },
+        text = { Text(strings.removeMemberConfirm(memberName), style = MaterialTheme.typography.bodyMedium, color = ArgepColors.Slate600) },
         confirmButton = {
             Button(
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.Error),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text("Üyeyi Çıkar")
+                Text(strings.removeMember)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("İptal", color = ArgepColors.Slate500)
+                Text(strings.cancel, color = ArgepColors.Slate500)
             }
         },
         containerColor = Color.White
@@ -391,17 +415,17 @@ fun EditRoleDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rolü Düzenle", fontWeight = FontWeight.Bold) },
+        title = { Text(strings.editRole, fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("${member.profile?.fullName} için yeni bir proje rolü seçin.", style = MaterialTheme.typography.bodySmall, color = ArgepColors.Slate500)
+                Text(strings.selectNewRoleFor(member.profile?.fullName ?: strings.unnamed), style = MaterialTheme.typography.bodySmall, color = ArgepColors.Slate500)
                 
                 Box(modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(
                         value = selectedRole.name.replace("_", " "),
                         onValueChange = { },
                         readOnly = true,
-                        label = { Text("Yeni Rol") },
+                        label = { Text(strings.newRole) },
                         modifier = Modifier.fillMaxWidth().clickable { expanded = true },
                         shape = RoundedCornerShape(10.dp),
                         trailingIcon = { Icon(Icons.Default.ArrowDropDown, null) },
@@ -434,12 +458,12 @@ fun EditRoleDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.Navy700),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text("Rolü Güncelle")
+                Text(strings.updateRole)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("İptal", color = ArgepColors.Slate500)
+                Text(strings.cancel, color = ArgepColors.Slate500)
             }
         },
         containerColor = Color.White

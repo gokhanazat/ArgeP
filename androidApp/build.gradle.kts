@@ -30,15 +30,18 @@ android {
         applicationId = "com.argesurec.android"
         minSdk = 24
         targetSdk = 35
-        versionCode = 100
-        versionName = "1.0.0"
+        versionCode = 104
+        versionName = "1.0.4"
 
         val supabaseUrl = properties.getProperty("SUPABASE_URL")?.removeSurrounding("\"") ?: ""
         val supabaseKey = properties.getProperty("SUPABASE_ANON_KEY")?.removeSurrounding("\"") ?: ""
+        val revenueCatKey = properties.getProperty("REVENUECAT_API_KEY")?.removeSurrounding("\"") ?: ""
         
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseKey\"")
+        buildConfigField("String", "REVENUECAT_API_KEY", "\"$revenueCatKey\"")
     }
+
 
     signingConfigs {
         create("release") {
@@ -77,5 +80,8 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.koin.android)
+    implementation(libs.revenuecat.purchases)
+    implementation(libs.revenuecat.purchases.ui)
     debugImplementation(compose.uiTooling)
 }
+

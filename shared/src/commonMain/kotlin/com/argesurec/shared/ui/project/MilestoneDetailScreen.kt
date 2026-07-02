@@ -23,6 +23,8 @@ import com.argesurec.shared.ui.components.LoadingScreen
 import com.argesurec.shared.ui.theme.ArgepColors
 import com.argesurec.shared.util.UiState
 import com.argesurec.shared.viewmodel.MilestoneViewModel
+import com.argesurec.shared.ui.tasks.TasksScreen
+import com.argesurec.shared.util.strings
 
 class MilestoneDetailScreen(private val milestoneId: String) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -43,7 +45,7 @@ class MilestoneDetailScreen(private val milestoneId: String) : Screen {
                 TopAppBar(
                     title = {
                         Column {
-                            Text("Milestone Detayı", style = MaterialTheme.typography.titleLarge)
+                            Text(strings.milestoneDetail, style = MaterialTheme.typography.titleLarge)
                             Text("ID: ${milestoneId.take(8)}", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
                         }
                     },
@@ -56,7 +58,7 @@ class MilestoneDetailScreen(private val milestoneId: String) : Screen {
                             colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.Navy700),
                             shape = RoundedCornerShape(7.dp)
                         ) {
-                            Text("Kanban'a Git", fontSize = 12.sp)
+                            Text(strings.goToKanban, fontSize = 12.sp)
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                     },
@@ -78,24 +80,23 @@ class MilestoneDetailScreen(private val milestoneId: String) : Screen {
                         Column(modifier = Modifier.padding(24.dp)) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Text(milestone.title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                                StatusBadge(milestone.status ?: "Bekliyor")
+                                StatusBadge(milestone.status ?: strings.waiting)
                             }
                             
                             Spacer(modifier = Modifier.height(24.dp))
                             
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
-                                MetaInfoItem("Hedef Bitiş", milestone.dueDate ?: "Belirtilmedi", "📅")
-                                MetaInfoItem("Öncelik", "Yüksek", "🔥")
-                                MetaInfoItem("Sorumlu", "Teknik Ekip", "👥")
+                                MetaInfoItem(strings.targetEndDate, milestone.dueDate ?: strings.noDateSpecified, "📅")
+                                MetaInfoItem(strings.priority, strings.high, "🔥")
+                                MetaInfoItem(strings.responsible, strings.technicalTeam, "👥")
                             }
 
                             HorizontalDivider(modifier = Modifier.padding(vertical = 32.dp), color = ArgepColors.Slate100)
                             
-                            Text("NOTLAR & DETAYLAR", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = ArgepColors.Slate500)
+                            Text(strings.notesAndDetails, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = ArgepColors.Slate500)
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                "Bu milestone projenin temel altyapısının tamamlanmasını hedefler. " +
-                                "Veritabanı şeması, auth modülü ve temel UI navigasyon bu fazda bitirilmelidir.",
+                                strings.defaultMilestoneDescription,
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = ArgepColors.Slate700
                             )

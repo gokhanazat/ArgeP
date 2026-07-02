@@ -11,6 +11,16 @@ enum class ProjectPhase {
 }
 
 @Serializable
+data class Organization(
+    @SerialName("id") val id: String? = null,
+    @SerialName("name") val name: String,
+    @SerialName("owner_id") val ownerId: String,
+    @SerialName("subscription_status") val subscriptionStatus: String = "free",
+    @SerialName("created_at") val createdAt: String? = null
+)
+
+
+@Serializable
 enum class TaskPriority {
     @SerialName("LOW") LOW,
     @SerialName("MEDIUM") MEDIUM,
@@ -32,6 +42,7 @@ data class ProjectIdOnly(
 @Serializable
 data class Project(
     @SerialName("id") val id: String? = null,
+    @SerialName("org_id") val orgId: String,
     @SerialName("name") val name: String,
     @SerialName("description") val description: String? = null,
     @SerialName("phase") val phase: ProjectPhase,
@@ -47,6 +58,7 @@ data class Project(
 @Serializable
 data class Expense(
     @SerialName("id") val id: String? = null,
+    @SerialName("org_id") val orgId: String,
     @SerialName("project_id") val projectId: String,
     @SerialName("amount") val amount: Double,
     @SerialName("category") val category: String,
@@ -59,6 +71,7 @@ data class Expense(
 @Serializable
 data class Milestone(
     @SerialName("id") val id: String? = null,
+    @SerialName("org_id") val orgId: String,
     @SerialName("project_id") val projectId: String,
     @SerialName("title") val title: String,
     @SerialName("due_date") val dueDate: String? = null,
@@ -69,6 +82,7 @@ data class Milestone(
 @Serializable
 data class Task(
     @SerialName("id") val id: String? = null,
+    @SerialName("org_id") val orgId: String,
     @SerialName("milestone_id") val milestoneId: String,
     @SerialName("title") val title: String,
     @SerialName("description") val description: String? = null,
@@ -94,7 +108,9 @@ data class UserProfile(
     @SerialName("full_name") val fullName: String? = null,
     @SerialName("avatar_url") val avatarUrl: String? = null,
     @SerialName("department") val department: String? = null,
-    @SerialName("is_admin") val isAdmin: Boolean = false
+    @SerialName("is_admin") val isAdmin: Boolean = false,
+    @SerialName("org_id") val orgId: String? = null,
+    @SerialName("role") val role: String? = "customer"
 )
 
 @Serializable
@@ -110,6 +126,7 @@ data class TeamMemberWithProfile(
 @Serializable
 data class ProjectWithTeam(
     @SerialName("id") val id: String? = null,
+    @SerialName("org_id") val orgId: String,
     @SerialName("name") val name: String,
     @SerialName("description") val description: String? = null,
     @SerialName("phase") val phase: ProjectPhase,
@@ -125,6 +142,7 @@ data class ProjectWithTeam(
 
 fun ProjectWithTeam.toProject() = Project(
     id = id,
+    orgId = orgId,
     name = name,
     description = description,
     phase = phase,

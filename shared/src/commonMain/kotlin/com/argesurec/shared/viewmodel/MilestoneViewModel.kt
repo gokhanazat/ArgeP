@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.argesurec.shared.model.Milestone
 import com.argesurec.shared.repository.MilestoneRepository
+import com.argesurec.shared.repository.ProfileRepository
 import com.argesurec.shared.util.UiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +17,8 @@ data class MilestoneData(
 )
 
 class MilestoneViewModel(
-    private val repository: MilestoneRepository
+    private val repository: MilestoneRepository,
+    private val profileRepository: ProfileRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<UiState<MilestoneData>>(UiState.Loading)
@@ -37,8 +39,15 @@ class MilestoneViewModel(
 
     fun createMilestone(projectId: String, titleInput: String, dueDateInput: String?) {
         viewModelScope.launch {
+            val orgId = profileRepository.profile.value?.orgId
+            if (orgId == null) {
+                _state.emit(UiState.Error("İşletme bilgisi bulunamadı."))
+                return@launch
+            }
+
             val newMilestone = Milestone(
                 id = null,
+                orgId = orgId,
                 projectId = projectId,
                 title = titleInput,
                 dueDate = dueDateInput,

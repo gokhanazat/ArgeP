@@ -7,6 +7,7 @@ import com.argesurec.shared.model.TaskPriority
 import com.argesurec.shared.model.TaskStatus
 import com.argesurec.shared.repository.TaskRepository
 import com.argesurec.shared.repository.MilestoneRepository
+import com.argesurec.shared.repository.ProfileRepository
 import com.argesurec.shared.util.UiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +25,8 @@ data class TaskData(
 
 class TaskViewModel(
     private val repository: TaskRepository,
-    private val milestoneRepository: MilestoneRepository
+    private val milestoneRepository: MilestoneRepository,
+    private val profileRepository: ProfileRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<UiState<TaskData>>(UiState.Loading)
@@ -50,7 +52,13 @@ class TaskViewModel(
         viewModelScope.launch {
             _state.emit(UiState.Loading)
             try {
-                repository.getAssignedToMe().collect { tasks ->
+                val orgId = profileRepository.profile.value?.orgId
+                if (orgId == null) {
+                    _state.emit(UiState.Error("İşletme bilgisi bulunamadı."))
+                    return@launch
+                }
+
+                repository.getAssignedToMe(orgId).collect { tasks ->
                     val pendingCount = tasks.count { it.status != TaskStatus.DONE }
                     val completedCount = tasks.count { it.status == TaskStatus.DONE }
                     _state.emit(UiState.Success(TaskData(
@@ -69,7 +77,13 @@ class TaskViewModel(
         viewModelScope.launch {
             _state.emit(UiState.Loading)
             try {
-                repository.getAll().collect { tasks ->
+                val orgId = profileRepository.profile.value?.orgId
+                if (orgId == null) {
+                    _state.emit(UiState.Error("İşletme bilgisi bulunamadı."))
+                    return@launch
+                }
+
+                repository.getAll(orgId).collect { tasks ->
                     _state.emit(UiState.Success(TaskData(allTasks = tasks)))
                 }
             } catch (e: Exception) {
@@ -86,8 +100,15 @@ class TaskViewModel(
         assignedToInput: String?
     ) {
         viewModelScope.launch {
+            val orgId = profileRepository.profile.value?.orgId
+            if (orgId == null) {
+                _state.emit(UiState.Error("İşletme bilgisi bulunamadı."))
+                return@launch
+            }
+
             val newTask = Task(
                 id = null,
+                orgId = orgId,
                 milestoneId = milestoneId,
                 title = titleInput,
                 description = descriptionInput,

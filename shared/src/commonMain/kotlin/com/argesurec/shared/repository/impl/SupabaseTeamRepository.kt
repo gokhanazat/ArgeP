@@ -23,14 +23,18 @@ class SupabaseTeamRepository(
     private val supabase: SupabaseClient
 ) : TeamRepository {
 
-    override fun getAll(): Flow<List<TeamMember>> = flow {
-        val members = supabase.from("team_members").select().decodeList<TeamMember>()
+    override fun getAll(orgId: String): Flow<List<TeamMember>> = flow {
+        val members = supabase.from("team_members").select {
+            filter { eq("org_id", orgId) }
+        }.decodeList<TeamMember>()
         emit(members)
     }
 
-    override fun getAllWithProfiles(): Flow<List<TeamMemberWithProfile>> = flow {
+    override fun getAllWithProfiles(orgId: String): Flow<List<TeamMemberWithProfile>> = flow {
         val members = supabase.from("team_members")
-            .select(columns = Columns.raw("*, profiles(*)"))
+            .select(columns = Columns.raw("*, profiles(*)")) {
+                filter { eq("org_id", orgId) }
+            }
             .decodeList<TeamMemberWithProfile>()
         emit(members)
     }
@@ -83,6 +87,25 @@ class SupabaseTeamRepository(
     }
 
     override suspend fun inviteMember(email: String, role: String): Result<Unit> = try {
+        val userProfile = supabase.from("profiles").select().decodeSingleOrNull<com.argesurec.shared.model.UserProfile>()
+        val orgId = userProfile?.orgId ?: throw Exception("Organizasyon ID bulunamadı")
+        
+        supabase.functions.invoke("invite-member", buildJsonObject {
+            put("email", email)
+            put("orgId", orgId)
+            put("role", role)
+        })
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    suspend fun inviteToOrganization(email: String, role: String, orgId: String): Result<Unit> = try {
+        supabase.functions.invoke("invite-member", buildJsonObject {
+            put("email", email)
+            put("orgId", orgId)
+            put("role", role)
+        })
         Result.success(Unit)
     } catch (e: Exception) {
         Result.failure(e)

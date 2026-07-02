@@ -10,6 +10,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.argesurec.shared.util.isWeb
+import com.argesurec.shared.util.ProvideStrings
 
 private val LightColorScheme = lightColorScheme(
     primary = ArgepColors.Navy700,
@@ -108,9 +109,11 @@ fun ArgepTheme(
         else -> LightColorScheme
     }
     
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = ArgepTypography,
-        content = content
-    )
+    ProvideStrings {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = ArgepTypography,
+            content = content
+        )
+    }
 }

@@ -21,8 +21,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.serialization.json.jsonPrimitive
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import org.koin.compose.viewmodel.koinViewModel
 import com.argesurec.shared.ui.theme.ArgepColors
+import com.argesurec.shared.util.strings
 import com.argesurec.shared.viewmodel.AuthViewModel
 import com.argesurec.shared.viewmodel.SettingsViewModel
 
@@ -30,13 +33,15 @@ class ProfileScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
+        val s = strings
         val authViewModel = koinViewModel<AuthViewModel>()
         val settingsViewModel = koinViewModel<SettingsViewModel>()
+        val navigator = LocalNavigator.currentOrThrow
         
         val state by authViewModel.state.collectAsState()
         val isDarkMode by settingsViewModel.isDarkMode.collectAsState()
         val user = state.currentUser
-        val fullName = user?.userMetadata?.get("full_name")?.jsonPrimitive?.content ?: "Kullanıcı"
+        val fullName = user?.userMetadata?.get("full_name")?.jsonPrimitive?.content ?: s.defaultUser
 
         var showEditDialog by remember { mutableStateOf(false) }
         var showSettingsDialog by remember { mutableStateOf(false) }
@@ -45,13 +50,13 @@ class ProfileScreen : Screen {
         var editDept by remember { mutableStateOf("") }
 
         val departments = listOf(
-            "Yazılım Geliştirme",
-            "Hardware & PCB",
-            "Mekanik Tasarım",
-            "Gömülü Sistemler",
-            "Proje Yönetimi",
-            "Veri Analitiği",
-            "Kalite Kontrol"
+            s.deptSoftware,
+            s.deptHardware,
+            s.deptMechanical,
+            s.deptEmbedded,
+            s.deptProject,
+            s.deptData,
+            s.deptQuality
         )
 
         // Dialogs
@@ -81,25 +86,44 @@ class ProfileScreen : Screen {
         }
 
         Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("Hesap Ayarları", style = MaterialTheme.typography.titleLarge) },
-                    actions = {
-                        TextButton(onClick = { authViewModel.signOut() }, colors = ButtonDefaults.textButtonColors(contentColor = ArgepColors.Error)) {
-                            Icon(Icons.AutoMirrored.Filled.ExitToApp, null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Çıkış Yap")
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = ArgepColors.White)
-                )
-            },
-            containerColor = ArgepColors.Slate100
+            containerColor = ArgepColors.Slate100,
+            contentWindowInsets = WindowInsets(0.dp)
         ) { padding ->
-            Column(
-                modifier = Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
+            Column(modifier = Modifier.padding(bottom = padding.calculateBottomPadding()).fillMaxSize()) {
+                // EXECUTIVE HEADER
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                colors = listOf(ArgepColors.Navy900, ArgepColors.ChartBlue.copy(alpha = 0.8f))
+                            ),
+                            shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
+                        )
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 32.dp).padding(top = 12.dp, bottom = 40.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(s.profile.uppercase(), style = MaterialTheme.typography.labelSmall, color = ArgepColors.Navy300, letterSpacing = 1.sp)
+                            Text(s.accountSettings, style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = ArgepColors.White)
+                        }
+                        
+                        IconButton(
+                            onClick = { authViewModel.signOut() },
+                            modifier = Modifier.background(ArgepColors.Error.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.ExitToApp, null, tint = ArgepColors.Error)
+                        }
+                    }
+                }
+
+                Column(
+                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
                 // User Profile Header
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -115,32 +139,52 @@ class ProfileScreen : Screen {
                         }
                         Column {
                             Text(fullName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                            Text(user?.email ?: "email@uygulama.com", style = MaterialTheme.typography.bodyLarge, color = ArgepColors.Slate500)
+                            Text(user?.email ?: s.defaultEmail, style = MaterialTheme.typography.bodyLarge, color = ArgepColors.Slate500)
+                            state.organization?.let { org ->
+                                Text(org.name, style = MaterialTheme.typography.bodyMedium, color = ArgepColors.Navy700, fontWeight = FontWeight.SemiBold)
+                            }
                             Spacer(modifier = Modifier.height(8.dp))
                             Surface(color = ArgepColors.Phase3Light, shape = RoundedCornerShape(20.dp)) {
-                                Text("AKTİF ÜYE", modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = ArgepColors.Phase3, fontWeight = FontWeight.Bold)
+                                val roleText = when(state.userProfile?.role) {
+                                    "owner" -> strings.owner
+                                    "manager" -> strings.manager
+                                    else -> s.activeMember
+                                }
+                                Text(roleText, modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = ArgepColors.Phase3, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
                 }
 
                 // Settings Sections
-                SettingsSection("Kişisel Bilgiler") {
-                    SettingsRow(Icons.Default.Person, "Profil Bilgileri", "İsim, soyisim ve departman güncelleyin.") {
+                SettingsSection(s.personalInfo) {
+                    SettingsRow(Icons.Default.Person, s.profileInfo, s.profileInfoSubtitle) {
                         editName = fullName
                         editDept = "" 
                         showEditDialog = true
                     }
-                    SettingsRow(Icons.Default.Settings, "Uygulama Tercihleri", "Tema ve bildirim ayarlarını yönetin.") {
+                    
+                    // Admin/Owner Section
+                    if (state.userProfile?.role == "owner" || state.userProfile?.role == "manager") {
+                        SettingsRow(Icons.Default.Group, s.teamManagement, strings.manageOrganizationTeam) {
+                            navigator.push(OrganizationTeamScreen())
+                        }
+                    }
+
+                    SettingsRow(Icons.Default.Settings, s.appPreferences, s.appPreferencesSubtitle) {
                         showSettingsDialog = true
                     }
-                    SettingsRow(Icons.Default.Info, "Hakkında", "Versiyon v1.0.4 - Argep Dashboard") {
+                    SettingsRow(Icons.Default.Info, s.about, s.aboutSubtitle) {
                         showAboutDialog = true
+                    }
+                    SettingsRow(Icons.Default.Help, s.userGuide, s.guideSubtitle) {
+                        navigator.push(GuideScreen())
                     }
                 }
             }
         }
     }
+}
 }
 
 @Composable
@@ -194,13 +238,13 @@ fun ProfileEditDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Profili Düzenle", fontWeight = FontWeight.Bold) },
+        title = { Text(strings.editProfile, fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Tam İsim") },
+                    label = { Text(strings.fullNameLabel) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp)
                 )
@@ -210,7 +254,7 @@ fun ProfileEditDialog(
                         value = dept,
                         onValueChange = { },
                         readOnly = true,
-                        label = { Text("Departman") },
+                        label = { Text(strings.department) },
                         modifier = Modifier.fillMaxWidth().clickable { expanded = true },
                         shape = RoundedCornerShape(8.dp),
                         trailingIcon = {
@@ -243,12 +287,12 @@ fun ProfileEditDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = ArgepColors.Navy700),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text("Kaydet")
+                Text(strings.save)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("İptal", color = ArgepColors.Slate500)
+                Text(strings.cancel, color = ArgepColors.Slate500)
             }
         },
         containerColor = Color.White
@@ -263,7 +307,7 @@ fun SettingsDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Uygulama Tercihleri", fontWeight = FontWeight.Bold) },
+        title = { Text(strings.appPreferences, fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Row(
@@ -272,8 +316,8 @@ fun SettingsDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("Karanlık Mod", style = MaterialTheme.typography.titleMedium)
-                        Text("Göz yorgunluğunu azaltın", style = MaterialTheme.typography.bodySmall, color = ArgepColors.Slate500)
+                        Text(strings.darkMode, style = MaterialTheme.typography.titleMedium)
+                        Text(strings.darkModeSubtitle, style = MaterialTheme.typography.bodySmall, color = ArgepColors.Slate500)
                     }
                     Switch(
                         checked = isDarkMode,
@@ -290,15 +334,15 @@ fun SettingsDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("Bildirimler", style = MaterialTheme.typography.titleMedium)
-                        Text("Yeni görevlerden haberdar olun", style = MaterialTheme.typography.bodySmall, color = ArgepColors.Slate500)
+                        Text(strings.notifications, style = MaterialTheme.typography.titleMedium)
+                        Text(strings.notificationsSubtitle, style = MaterialTheme.typography.bodySmall, color = ArgepColors.Slate500)
                     }
                     Switch(checked = true, onCheckedChange = {}, enabled = false)
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Kapat") }
+            TextButton(onClick = onDismiss) { Text(strings.close) }
         },
         containerColor = Color.White
     )
@@ -308,7 +352,7 @@ fun SettingsDialog(
 fun AboutDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Hakkında", fontWeight = FontWeight.Bold) },
+        title = { Text(strings.about, fontWeight = FontWeight.Bold) },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -320,24 +364,24 @@ fun AboutDialog(onDismiss: () -> Unit) {
                         Text("AG", color = ArgepColors.Navy900, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
                     }
                 }
-                Text("Argep Dashboard", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text("Sürüm 1.0.4 (Beta)", style = MaterialTheme.typography.bodyMedium, color = ArgepColors.Slate500)
+                Text(strings.appName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(strings.appVersion, style = MaterialTheme.typography.bodyMedium, color = ArgepColors.Slate500)
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 Text(
-                    "Argep, Ar-Ge süreçlerini ve proje yönetimini kolaylaştırmak için tasarlanmış bir platformdur.",
+                    strings.appDescription,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     style = MaterialTheme.typography.bodySmall
                 )
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                Text("© 2024 Argesurec Teknoloji", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate400)
+                Text(strings.copyright, style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate400)
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Anladım") }
+            TextButton(onClick = onDismiss) { Text(strings.understood) }
         },
         containerColor = Color.White
     )

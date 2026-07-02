@@ -17,35 +17,14 @@ class SupabaseProjectRepository(
     private val supabase: SupabaseClient
 ) : ProjectRepository {
 
-    override fun getAll(userId: String): Flow<List<ProjectWithTeam>> = flow {
-        // Step 1: Get Project IDs where user is the owner
-        val ownedProjectIds = supabase.from("projects")
-            .select(Columns.raw("id")) {
-                filter { eq("owner_id", userId) }
-            }.decodeList<ProjectIdOnly>()
-            .map { it.id }
-
-        // Step 2: Get Project IDs where user is a team member
-        val memberProjectIds = supabase.from("team_members")
-            .select(Columns.raw("project_id")) {
-                filter { eq("user_id", userId) }
-            }.decodeList<MemberProjectIds>()
-            .map { it.projectId }
-
-        val allIds = (ownedProjectIds + memberProjectIds).distinct()
-
-        if (allIds.isEmpty()) {
-            emit(emptyList())
-        } else {
-            // Step 3: Fetch full project details for all relevant IDs
-            val projects = supabase.from("projects")
-                .select(Columns.raw("*, team_members(*, profiles(*))")) {
-                    filter { 
-                        isIn("id", allIds) 
-                    }
-                }.decodeList<ProjectWithTeam>()
-            emit(projects)
-        }
+    override fun getAll(orgId: String): Flow<List<ProjectWithTeam>> = flow {
+        val projects = supabase.from("projects")
+            .select(Columns.raw("*, team_members(*, profiles(*))")) {
+                filter { 
+                    eq("org_id", orgId) 
+                }
+            }.decodeList<ProjectWithTeam>()
+        emit(projects)
     }
 
     @kotlinx.serialization.Serializable
@@ -97,39 +76,15 @@ class SupabaseProjectRepository(
         }
     }
 
-    override fun getByPhase(phase: ProjectPhase, userId: String): Flow<List<ProjectWithTeam>> = flow {
-        // Step 1: Get Project IDs where user is the owner and phase matches
-        val ownedProjectIds = supabase.from("projects")
-            .select(Columns.raw("id")) {
+    override fun getByPhase(phase: ProjectPhase, orgId: String): Flow<List<ProjectWithTeam>> = flow {
+        val projects = supabase.from("projects")
+            .select(Columns.raw("*, team_members(*, profiles(*))")) {
                 filter { 
-                    eq("owner_id", userId) 
+                    eq("org_id", orgId) 
                     eq("phase", phase.name)
                 }
-            }.decodeList<ProjectIdOnly>()
-            .map { it.id }
-
-        // Step 2: Get Project IDs where user is a team member
-        val memberProjectIds = supabase.from("team_members")
-            .select(Columns.raw("project_id")) {
-                filter { eq("user_id", userId) }
-            }.decodeList<MemberProjectIds>()
-            .map { it.projectId }
-
-        val allIds = (ownedProjectIds + memberProjectIds).distinct()
-
-        if (allIds.isEmpty()) {
-            emit(emptyList())
-        } else {
-            // Step 3: Fetch full project details for all relevant IDs, filtered by phase
-            val projects = supabase.from("projects")
-                .select(Columns.raw("*, team_members(*, profiles(*))")) {
-                    filter { 
-                        isIn("id", allIds) 
-                        eq("phase", phase.name)
-                    }
-                }.decodeList<ProjectWithTeam>()
-            emit(projects)
-        }
+            }.decodeList<ProjectWithTeam>()
+        emit(projects)
     }
 
     override suspend fun uploadFile(projectId: String, fileName: String, bytes: ByteArray): Result<String> {

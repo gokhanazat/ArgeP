@@ -43,6 +43,19 @@ object ArgepColors {
     val Phase3 = Color(0xFF10B981) // Commercialization (Emerald)
     val Phase3Light = Color(0xFFECFDF5)
 
+    // Chart & Stat Colors (Reference Image)
+    val ChartBlue = Color(0xFF6366F1)
+    val ChartBlueBg = Color(0xFFE0E7FF)
+    
+    val ChartAmber = Color(0xFFF59E0B)
+    val ChartAmberBg = Color(0xFFFEF3C7)
+    
+    val ChartEmerald = Color(0xFF10B981)
+    val ChartEmeraldBg = Color(0xFFD1FAE5)
+    
+    val ChartRose = Color(0xFFF43F5E)
+    val ChartRoseBg = Color(0xFFFEE2E2)
+
     val White = Color(0xFFFFFFFF)
 
     // Executive Ledger Theme (Web Only)
@@ -52,4 +65,10 @@ object ArgepColors {
     val ExecutiveSurface = Color(0xFFFFFFFF)
     val ExecutiveSurfaceLow = Color(0xFFF2F4F8)
     val ExecutiveOnSurface = Color(0xFF191C1F)
+
+    // Premium Theme
+    val Gold = Color(0xFFFFD700)
+    val PremiumGold = Color(0xFFD4AF37) // Metallic Gold
+    val PremiumGoldLight = Color(0xFFFFF9E6)
+    val PremiumNavy = Color(0xFF0A192F) // Deep space navy for premium contrast
 }

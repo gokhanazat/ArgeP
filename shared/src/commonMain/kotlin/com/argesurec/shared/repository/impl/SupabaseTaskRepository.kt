@@ -12,8 +12,12 @@ class SupabaseTaskRepository(
     private val supabase: SupabaseClient
 ) : TaskRepository {
 
-    override fun getAll(): Flow<List<Task>> = flow {
-        val tasks = supabase.from("tasks").select().decodeList<Task>()
+    override fun getAll(orgId: String): Flow<List<Task>> = flow {
+        val tasks = supabase.from("tasks")
+            .select {
+                filter { eq("org_id", orgId) }
+            }
+            .decodeList<Task>()
         emit(tasks)
     }
 
@@ -68,11 +72,14 @@ class SupabaseTaskRepository(
         emit(tasks)
     }
 
-    override fun getAssignedToMe(): Flow<List<Task>> = flow {
+    override fun getAssignedToMe(orgId: String): Flow<List<Task>> = flow {
         val userId = supabase.auth.currentUserOrNull()?.id
         if (userId != null) {
             val tasks = supabase.from("tasks").select {
-                filter { eq("assigned_to", userId) }
+                filter { 
+                    eq("assigned_to", userId) 
+                    eq("org_id", orgId)
+                }
             }.decodeList<Task>()
             emit(tasks)
         } else {

@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface MilestoneRepository {
     fun getByProject(projectId: String): Flow<List<Milestone>>
-    fun getAll(): Flow<List<Milestone>>
+    fun getAll(orgId: String): Flow<List<Milestone>>
     suspend fun getById(id: String): Milestone?
     suspend fun insert(item: Milestone): Result<Milestone>
     suspend fun update(item: Milestone): Result<Milestone>

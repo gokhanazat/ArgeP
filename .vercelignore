@@ -1,0 +1,28 @@
+# Absolute project cleanup for Vercel
+# This excludes 1.2GB of hidden/build files to fit Vercel's 100MB limit
+
+# HIDDEN GRADLE (MAJOR SIZE)
+.gradle/
+.gradle-jvm/
+
+# BUILD FOLDERS (MAJOR SIZE)
+build/
+**/build/
+webApp/build/
+shared/build/
+androidApp/build/
+
+# SOURCE CODE AND ASSETS (ALREADY IN PUBLIC)
+shared/
+webApp/
+androidApp/
+iosApp/
+gradle/
+gradlew
+gradlew.bat
+
+# OTHER
+node_modules/
+.idea/
+.env*.local
+*.log

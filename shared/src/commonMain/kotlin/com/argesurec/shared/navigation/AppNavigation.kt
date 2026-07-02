@@ -29,26 +29,7 @@ fun AppNavigation() {
 
     ArgepTheme(darkTheme = isDarkMode) {
         if (authState.isLoggedIn) {
-            TabNavigator(HomeTab) {
-                if (isWeb) {
-                    Row(modifier = Modifier.fillMaxSize()) {
-                        ExecutiveSidebar(onLogout = { authViewModel.signOut() })
-                        Box(modifier = Modifier.weight(1f)) {
-                            CurrentTab()
-                        }
-                    }
-                } else {
-                    Scaffold(
-                        bottomBar = {
-                            BottomNavBar()
-                        }
-                    ) { padding ->
-                        Box(modifier = Modifier.padding(padding)) {
-                            CurrentTab()
-                        }
-                    }
-                }
-            }
+            Navigator(MainScreen())
         } else {
             Navigator(LoginScreen())
         }

@@ -5,8 +5,8 @@ import com.argesurec.shared.model.TeamMemberWithProfile
 import kotlinx.coroutines.flow.Flow
 
 interface TeamRepository {
-    fun getAll(): Flow<List<TeamMember>>
-    fun getAllWithProfiles(): Flow<List<TeamMemberWithProfile>>
+    fun getAll(orgId: String): Flow<List<TeamMember>>
+    fun getAllWithProfiles(orgId: String): Flow<List<TeamMemberWithProfile>>
     fun getByProjectWithProfiles(projectId: String): Flow<List<TeamMemberWithProfile>>
     suspend fun getById(id: String): TeamMember?
     suspend fun insert(item: TeamMember): Result<TeamMember>

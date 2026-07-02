@@ -8,10 +8,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -28,13 +31,16 @@ import com.argesurec.shared.util.UiState
 import com.argesurec.shared.viewmodel.AuthViewModel
 import com.argesurec.shared.viewmodel.ProjectsViewModel
 import com.argesurec.shared.viewmodel.ProjectsData
+import com.argesurec.shared.ui.subscription.PaywallScreen
 import com.argesurec.shared.viewmodel.TaskViewModel
 import com.argesurec.shared.viewmodel.TaskData
 import com.argesurec.shared.util.isWeb
+import com.argesurec.shared.util.strings
 
 class HomeScreen : Screen {
     @Composable
     override fun Content() {
+        val s = strings
         val navigator = LocalNavigator.currentOrThrow
         val authViewModel = koinViewModel<AuthViewModel>()
         val taskViewModel = koinViewModel<TaskViewModel>()
@@ -44,7 +50,7 @@ class HomeScreen : Screen {
         val taskUiState by taskViewModel.state.collectAsState()
         val projectsUiState by projectsViewModel.state.collectAsState()
 
-        val userName = authState.currentUser?.userMetadata?.get("full_name")?.jsonPrimitive?.content ?: "Kullanıcı"
+        val userName = authState.currentUser?.userMetadata?.get("full_name")?.jsonPrimitive?.content ?: s.user
 
         LaunchedEffect(Unit) {
             taskViewModel.loadAssignedTasks()
@@ -62,8 +68,7 @@ class HomeScreen : Screen {
             MobileDashboard(
                 userName = userName,
                 taskUiState = taskUiState,
-                projectsUiState = projectsUiState,
-                navigator = navigator
+                projectsUiState = projectsUiState
             )
         }
     }
@@ -76,57 +81,78 @@ fun ExecutiveDashboard(
     projectsUiState: UiState<ProjectsData>,
     onTaskClick: (String) -> Unit
 ) {
-    // Main Content Area
+    val s = strings
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(ArgepColors.ExecutiveBackground)
             .verticalScroll(rememberScrollState())
-            .padding(48.dp)
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        // PROFESSIONAL NAVY HEADER
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                        colors = listOf(ArgepColors.Navy900, ArgepColors.ChartBlue.copy(alpha = 0.8f))
+                    ),
+                    shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
+                )
+                .padding(horizontal = 48.dp, vertical = 64.dp)
+        ) {
             Column {
-                Text("Executive Dashboard", style = MaterialTheme.typography.displayLarge.copy(fontSize = 32.sp), color = ArgepColors.ExecutivePrimary)
-                Text("Gerçek zamanlı ekosistem performansı.", style = MaterialTheme.typography.bodyMedium, color = ArgepColors.Slate500)
-            }
-            ExecutiveButton("Yeni Girişim", onClick = {})
-        }
-
-        Spacer(modifier = Modifier.height(48.dp))
-
-        // Stat Cards Grid
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-            val activePrj = (projectsUiState as? UiState.Success<ProjectsData>)?.data?.activeProjectsCount ?: 0
-            val pendingTsk = (taskUiState as? UiState.Success<TaskData>)?.data?.pendingTasksCount ?: 0
-            val completedTsk = (taskUiState as? UiState.Success<TaskData>)?.data?.completedTasksCount ?: 0
-
-            ExecutiveStatCard("Aktif Projeler", activePrj.toString(), "↑ 12%", "◫", modifier = Modifier.weight(1f))
-            ExecutiveStatCard("Bekleyen Görevler", pendingTsk.toString(), "Kritik", "⌛", modifier = Modifier.weight(1f))
-            ExecutiveStatCard("Tamamlanan", completedTsk.toString(), "Başarı", "✓", modifier = Modifier.weight(1f))
-            ExecutiveStatCard("Geciken", "07", "↓ 5%", "!", modifier = Modifier.weight(1f))
-        }
-
-        Spacer(modifier = Modifier.height(48.dp))
-
-        // Asymmetric Content Grid
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(48.dp)) {
-            // Left: Tasks List
-            Column(modifier = Modifier.weight(0.65f)) {
-                DashboardSectionCard(title = "Bana Atanan Görevler", badge = "Görünürlük Yüksek") {
-                    when (val uiState = taskUiState) {
-                        is UiState.Success<TaskData> -> {
-                            uiState.data.assignedTasks.take(4).forEach { task ->
-                                PremiumTaskRow(task, onClick = { onTaskClick(task.id!!) })
-                            }
-                        }
-                        else -> Box(Modifier.fillMaxWidth().height(100.dp))
+                Text(
+                    text = s.executiveDashboard.uppercase(),
+                    style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 2.sp),
+                    color = ArgepColors.Navy300
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = s.ecosystemPerformance,
+                        style = MaterialTheme.typography.displayMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = ArgepColors.White
+                        )
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        ExecutiveButton(s.export, onClick = {})
+                        ExecutiveButton(s.newInitiative, onClick = {})
                     }
                 }
             }
+        }
 
-            // Right: Roadmap
-            Column(modifier = Modifier.weight(0.35f)) {
-                DashboardSectionCard(title = "Proje Yol Haritası") {
+        Column(modifier = Modifier.padding(horizontal = 48.dp)) {
+            Spacer(modifier = Modifier.height(-32.dp)) // Pull stats up into the header slightly
+
+            // Stat Cards Grid
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                val activePrj = (projectsUiState as? UiState.Success<ProjectsData>)?.data?.activeProjectsCount ?: 0
+                val pendingTsk = (taskUiState as? UiState.Success<TaskData>)?.data?.pendingTasksCount ?: 0
+                val completedTsk = (taskUiState as? UiState.Success<TaskData>)?.data?.completedTasksCount ?: 0
+
+                ExecutiveStatCard(s.activeProjects, activePrj.toString(), "↑ 12%", Icons.Default.CheckCircle, ArgepColors.ChartBlue, ArgepColors.ChartBlueBg, modifier = Modifier.weight(1f))
+                ExecutiveStatCard(s.pendingTasks, pendingTsk.toString(), s.critical, Icons.Default.DateRange, ArgepColors.ChartAmber, ArgepColors.ChartAmberBg, modifier = Modifier.weight(1f))
+                ExecutiveStatCard(s.completed, completedTsk.toString(), s.success_label, Icons.Default.Check, ArgepColors.ChartEmerald, ArgepColors.ChartEmeraldBg, modifier = Modifier.weight(1f))
+                ExecutiveStatCard(s.atRisk, "03", "↓ 5%", Icons.Default.Warning, ArgepColors.ChartRose, ArgepColors.ChartRoseBg, modifier = Modifier.weight(1f))
+            }
+
+            Spacer(modifier = Modifier.height(48.dp))
+
+            // Content Grid
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(48.dp)) {
+                // Left: Tasks List
+                Column(modifier = Modifier.weight(0.60f)) {
+                    Text(
+                        s.activeProjects,
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
                     when (val uiState = projectsUiState) {
                         is UiState.Success<ProjectsData> -> {
                             uiState.data.projects.take(4).forEach { project ->
@@ -136,7 +162,39 @@ fun ExecutiveDashboard(
                         else -> Box(Modifier.fillMaxWidth().height(100.dp))
                     }
                 }
+
+                // Right: Activities
+                Column(modifier = Modifier.weight(0.40f)) {
+                    Text(
+                        s.recentActivities,
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    DashboardSectionCard(title = s.timeline) {
+                        // Activity Timeline Logic
+                        ActivityItem(s.newInitiative, "2 hours ago", ArgepColors.ChartBlue)
+                        ActivityItem(s.success_label, "5 hours ago", ArgepColors.ChartEmerald)
+                        ActivityItem(s.critical, "Yesterday", ArgepColors.ChartRose)
+                    }
+                }
             }
+            
+            Spacer(modifier = Modifier.height(64.dp))
+        }
+    }
+}
+
+@Composable
+fun ActivityItem(title: String, time: String, color: Color) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(modifier = Modifier.size(8.dp).background(color, RoundedCornerShape(4.dp)))
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(title, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+            Text(time, style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
         }
     }
 }
@@ -161,106 +219,102 @@ fun ExecutiveNavItem(label: String, active: Boolean) {
 fun MobileDashboard(
     userName: String,
     taskUiState: UiState<TaskData>,
-    projectsUiState: UiState<ProjectsData>,
-    navigator: cafe.adriel.voyager.navigator.Navigator
+    projectsUiState: UiState<ProjectsData>
 ) {
-    Scaffold(
-        topBar = {
-            DashboardTopBar(userName)
-        }
-    ) { padding ->
-        Column(
+    val s = strings
+    val navigator = LocalNavigator.currentOrThrow
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(ArgepColors.Slate50)
+            .verticalScroll(rememberScrollState())
+    ) {
+        // Mobile Hero Header (Integrated with Top Bar)
+        Box(
             modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .background(ArgepColors.Slate100)
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp)
+                .fillMaxWidth()
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                        colors = listOf(ArgepColors.Navy900, ArgepColors.ChartBlue.copy(alpha = 0.8f))
+                    ),
+                    shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
+                )
         ) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(modifier = Modifier.statusBarsPadding().padding(bottom = 32.dp)) { 
+                // Header Titles
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            s.ecosystemPerformance.uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = ArgepColors.Navy300,
+                            letterSpacing = 1.2.sp
+                        )
+                        Text(
+                            s.dashboard,
+                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                            color = ArgepColors.White
+                        )
+                    }
+                    IconButton(onClick = { navigator.push(PaywallScreen()) }) {
+                        Icon(Icons.Default.Star, contentDescription = "Premium", tint = ArgepColors.PremiumGold)
+                    }
+                }
+            }
+        }
+
+        Column(modifier = Modifier.padding(horizontal = 20.dp).offset(y = (-16).dp)) {
                 val activePrj = (projectsUiState as? UiState.Success<ProjectsData>)?.data?.activeProjectsCount ?: 0
                 val pendingTsk = (taskUiState as? UiState.Success<TaskData>)?.data?.pendingTasksCount ?: 0
-                
-                PremiumStatCard("Aktif Proje", activePrj.toString(), "Toplam proje", "◫", modifier = Modifier.weight(1f))
-                PremiumStatCard("Bekleyen Görev", pendingTsk.toString(), "Size atanan", "⏳", iconBg = Color(0xFFFEF3C7), modifier = Modifier.weight(1f))
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 val completedTsk = (taskUiState as? UiState.Success<TaskData>)?.data?.completedTasksCount ?: 0
-                PremiumStatCard("Tamamlanan", completedTsk.toString(), "Toplam tamamlanan", "✓", iconBg = ArgepColors.Phase3Light, modifier = Modifier.weight(1f))
-                PremiumStatCard("Gecikme", "0", "Aksiyon gerekli", "⚠", iconBg = ArgepColors.Error.copy(alpha = 0.1f), modifier = Modifier.weight(1f))
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
+                
+                // Stat Cards Grid (2x2)
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        ExecutiveStatCard(s.activeProjects, activePrj.toString(), "↑ 12%", Icons.Default.CheckCircle, ArgepColors.ChartBlue, ArgepColors.ChartBlueBg, modifier = Modifier.weight(1f))
+                        ExecutiveStatCard(s.pendingTasks, pendingTsk.toString(), s.critical, Icons.Default.DateRange, ArgepColors.ChartAmber, ArgepColors.ChartAmberBg, modifier = Modifier.weight(1f))
+                    }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        ExecutiveStatCard(s.completed, completedTsk.toString(), s.success_label, Icons.Default.Check, ArgepColors.ChartEmerald, ArgepColors.ChartEmeraldBg, modifier = Modifier.weight(1f))
+                        ExecutiveStatCard(s.atRisk, "03", "↓ 5%", Icons.Default.Warning, ArgepColors.ChartRose, ArgepColors.ChartRoseBg, modifier = Modifier.weight(1f))
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
 
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                DashboardSectionCard(title = "Bana Atanan Görevler", badge = "7 Görev") {
-                    when (val uiState = taskUiState) {
-                        is UiState.Loading -> Box(Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-                        is UiState.Error -> Text(uiState.message, color = ArgepColors.Error)
-                        is UiState.Success<TaskData> -> {
-                            uiState.data.assignedTasks.take(5).forEach { task ->
-                                PremiumTaskRow(task, onClick = { navigator.push(TaskDetailScreen(task.id!!)) })
+                Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                    DashboardSectionCard(title = s.assignedTasks) {
+                        when (val uiState = taskUiState) {
+                            is UiState.Loading -> Box(Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                            is UiState.Error -> Text(uiState.message, color = ArgepColors.Error)
+                            is UiState.Success<TaskData> -> {
+                                uiState.data.assignedTasks.take(5).forEach { task ->
+                                    PremiumTaskRow(task, onClick = { navigator.push(TaskDetailScreen(task.id!!)) })
+                                }
                             }
                         }
                     }
-                }
 
-                DashboardSectionCard(title = "Proje İlerlemeleri") {
-                    when (val uiState = projectsUiState) {
-                        is UiState.Loading -> Box(Modifier.fillMaxWidth().height(60.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(modifier = Modifier.size(24.dp)) }
-                        is UiState.Error -> Text(uiState.message, color = ArgepColors.Error)
-                        is UiState.Success<ProjectsData> -> {
-                            uiState.data.projects.take(3).forEach { project ->
-                                val phaseColor = when (project.phase) {
-                                    com.argesurec.shared.model.ProjectPhase.INCUBATION -> ArgepColors.Phase1
-                                    com.argesurec.shared.model.ProjectPhase.DEVELOPMENT -> ArgepColors.Phase2
-                                    com.argesurec.shared.model.ProjectPhase.COMMERCIALIZATION -> ArgepColors.Phase3
-                                    else -> ArgepColors.Navy500
+                    DashboardSectionCard(title = s.projectProgress) {
+                        when (val uiState = projectsUiState) {
+                            is UiState.Loading -> Box(Modifier.fillMaxWidth().height(60.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(modifier = Modifier.size(24.dp)) }
+                            is UiState.Error -> Text(uiState.message, color = ArgepColors.Error)
+                            is UiState.Success<ProjectsData> -> {
+                                uiState.data.projects.take(3).forEach { project ->
+                                    ExecutiveProjectRow(project.name, project.phase.name, 0.45f)
                                 }
-                                val phaseLightColor = when (project.phase) {
-                                    com.argesurec.shared.model.ProjectPhase.INCUBATION -> ArgepColors.Phase1Light
-                                    com.argesurec.shared.model.ProjectPhase.DEVELOPMENT -> ArgepColors.Phase2Light
-                                    com.argesurec.shared.model.ProjectPhase.COMMERCIALIZATION -> ArgepColors.Phase3Light
-                                    else -> ArgepColors.Navy100
-                                }
-                                val phaseName = when (project.phase) {
-                                    com.argesurec.shared.model.ProjectPhase.INCUBATION -> "Kuluçka"
-                                    com.argesurec.shared.model.ProjectPhase.DEVELOPMENT -> "Geliştirme"
-                                    com.argesurec.shared.model.ProjectPhase.COMMERCIALIZATION -> "Ticarileşme"
-                                    else -> "Belirsiz"
-                                }
-                                ProjectProgressRow(project.name, phaseName, 0.45f, phaseColor, phaseLightColor)
                             }
                         }
                     }
-                }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun DashboardTopBar(userName: String) {
-    TopAppBar(
-        title = {
-            Column {
-                Text("Dashboard", style = MaterialTheme.typography.titleLarge, color = ArgepColors.Navy900)
-                Text("Merhaba, $userName", style = MaterialTheme.typography.labelSmall, color = ArgepColors.Slate500)
-            }
-        },
-        actions = {
-            IconButton(onClick = {}) { Icon(Icons.Default.Search, contentDescription = null) }
-            IconButton(onClick = {}) { 
-                BadgedBox(badge = { Badge { Text(" ") } }) {
-                    Icon(Icons.Default.Notifications, contentDescription = null)
-                }
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = ArgepColors.White)
-    )
-}
 
 @Composable
 fun DashboardSectionCard(
@@ -269,17 +323,16 @@ fun DashboardSectionCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().shadow(4.dp, RoundedCornerShape(16.dp)),
         colors = CardDefaults.cardColors(containerColor = ArgepColors.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(10.dp)
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = ArgepColors.ExecutivePrimary)
                 if (badge != null) {
-                    Surface(color = ArgepColors.Navy100, shape = RoundedCornerShape(20.dp)) {
-                        Text(badge, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = ArgepColors.Navy700)
+                    Surface(color = ArgepColors.ChartBlueBg, shape = RoundedCornerShape(8.dp)) {
+                        Text(badge, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = ArgepColors.ChartBlue)
                     }
                 }
             }
