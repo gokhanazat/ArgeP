@@ -128,7 +128,7 @@ fun ExecutiveDashboard(
         }
 
         Column(modifier = Modifier.padding(horizontal = 48.dp)) {
-            Spacer(modifier = Modifier.height(-32.dp)) // Pull stats up into the header slightly
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Stat Cards Grid
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
