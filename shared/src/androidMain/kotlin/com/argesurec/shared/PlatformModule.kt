@@ -7,6 +7,6 @@ import org.koin.dsl.module
 actual val platformModule: Module = module {
     single { DatabaseDriverFactory(get()) }
     single<com.argesurec.shared.model.BillingRepository> { 
-        com.argesurec.shared.repository.impl.AndroidBillingRepository() 
+        com.argesurec.shared.repository.impl.AndroidBillingRepository(get()) 
     }
 }

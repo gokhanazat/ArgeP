@@ -64,6 +64,7 @@ kotlin {
             implementation(libs.voyager.tab.navigator)
             implementation(libs.voyager.transitions)
             implementation(libs.voyager.koin)
+            implementation(libs.kotlinx.datetime)
         }
 
         androidMain.dependencies {
@@ -88,13 +89,13 @@ kotlin {
 
 android {
     namespace = "com.argesurec.shared"
-    compileSdk = 35
+    compileSdk = libs.versions.android.compileSdk.get().toInt()
     buildFeatures {
         buildConfig = true
     }
 
     defaultConfig {
-        minSdk = 24
+        minSdk = libs.versions.android.minSdk.get().toInt()
         val supabaseUrl = properties.getProperty("SUPABASE_URL")?.removeSurrounding("\"") ?: ""
         val supabaseKey = properties.getProperty("SUPABASE_ANON_KEY")?.removeSurrounding("\"") ?: ""
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")

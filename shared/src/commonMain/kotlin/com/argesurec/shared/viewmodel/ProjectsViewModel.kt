@@ -74,9 +74,17 @@ class ProjectsViewModel(
         viewModelScope.launch {
             _state.emit(UiState.Loading)
             try {
-                val userId = supabase.auth.currentUserOrNull()?.id ?: ""
-                repository.getByPhase(phase, userId).collect { projects ->
-                    _state.emit(UiState.Success(ProjectsData(projects = projects, selectedPhase = phase)))
+                val orgId = profileRepository.profile.value?.orgId
+                if (orgId == null) {
+                    _state.emit(UiState.Error("İşletme bilgisi bulunamadı."))
+                    return@launch
+                }
+                repository.getByPhase(phase, orgId).collect { projects ->
+                    _state.emit(UiState.Success(ProjectsData(
+                        projects = projects, 
+                        selectedPhase = phase,
+                        isPremium = billingRepository.isPremium.value
+                    )))
                 }
             } catch (e: Exception) {
                 _state.emit(UiState.Error(e.message ?: "Filtreleme sırasında hata oluştu."))
@@ -128,7 +136,7 @@ class ProjectsViewModel(
 
             val result = repository.insert(newProject)
             if (result.isSuccess) {
-                loadProjects()
+                loadProjects(force = true)
                 _actionMessage.emit("Proje başarıyla oluşturuldu.")
             } else {
                 _actionMessage.emit(result.exceptionOrNull()?.message ?: "Proje oluşturulamadı.")

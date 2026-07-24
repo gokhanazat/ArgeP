@@ -14,7 +14,7 @@ kotlin {
 
 android {
     namespace = "com.argesurec.android"
-    compileSdk = 35
+    compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     val properties = Properties()
     val propertiesFile = project.rootProject.file("local.properties")
@@ -28,10 +28,10 @@ android {
 
     defaultConfig {
         applicationId = "com.argesurec.android"
-        minSdk = 24
-        targetSdk = 35
-        versionCode = 104
-        versionName = "1.0.4"
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        targetSdk = libs.versions.android.targetSdk.get().toInt()
+        versionCode = 107
+        versionName = "1.0.7"
 
         val supabaseUrl = properties.getProperty("SUPABASE_URL")?.removeSurrounding("\"") ?: ""
         val supabaseKey = properties.getProperty("SUPABASE_ANON_KEY")?.removeSurrounding("\"") ?: ""

@@ -1,11 +1,11 @@
 [versions]
-agp = "8.5.2"
+agp = "8.7.2"
 android-compileSdk = "35"
 android-minSdk = "24"
 android-targetSdk = "35"
-androidx-activityCompose = "1.9.1"
+androidx-activityCompose = "1.9.3"
 androidx-appcompat = "1.7.0"
-androidx-core-ktx = "1.13.1"
+androidx-core-ktx = "1.15.0"
 androidx-core-splashscreen = "1.0.1"
 compose-multiplatform = "1.6.11"
 kotlin = "2.0.20"
@@ -19,6 +19,7 @@ voyager = "1.1.0-beta03"
 sqldelight = "2.1.0"
 androidx-lifecycle = "2.8.2"
 revenuecat = "8.3.0"
+kotlinx-datetime = "0.6.1"
 
 
 [libraries]
@@ -72,6 +73,7 @@ androidx-lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycl
 # RevenueCat
 revenuecat-purchases = { module = "com.revenuecat.purchases:purchases", version.ref = "revenuecat" }
 revenuecat-purchases-ui = { module = "com.revenuecat.purchases:purchases-ui", version.ref = "revenuecat" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 
 
 [plugins]

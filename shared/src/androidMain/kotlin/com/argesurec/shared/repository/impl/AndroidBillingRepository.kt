@@ -9,15 +9,45 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.StoreProduct
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.datetime.Clock
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlin.time.Duration.Companion.days
 
-class AndroidBillingRepository : BillingRepository {
-    private val _isPremium = MutableStateFlow(false)
-    override val isPremium: StateFlow<Boolean> = _isPremium.asStateFlow()
+class AndroidBillingRepository(
+    private val supabase: SupabaseClient
+) : BillingRepository {
+    private val _isRcPremium = MutableStateFlow(false)
+    
+    override val isPremium: StateFlow<Boolean> = combine(
+        _isRcPremium,
+        supabase.auth.sessionStatus
+    ) { isRcPremium, _ ->
+        if (isRcPremium) return@combine true
+
+        val user = supabase.auth.currentUserOrNull()
+        val createdAt = user?.createdAt
+        if (createdAt != null) {
+            val now = Clock.System.now()
+            val diff = now - createdAt
+            diff <= 7.days
+        } else {
+            false
+        }
+    }.stateIn(
+        scope = CoroutineScope(Dispatchers.Main),
+        started = SharingStarted.Eagerly,
+        initialValue = false
+    )
 
     init {
         checkSubscriptionStatus()
@@ -26,7 +56,8 @@ class AndroidBillingRepository : BillingRepository {
     private fun checkSubscriptionStatus() {
         Purchases.sharedInstance.getCustomerInfo(object : ReceiveCustomerInfoCallback {
             override fun onReceived(customerInfo: CustomerInfo) {
-                _isPremium.value = customerInfo.entitlements["premium"]?.isActive == true
+                _isRcPremium.value = customerInfo.entitlements["ArgeP Pro"]?.isActive == true || 
+                                     customerInfo.entitlements["premium"]?.isActive == true
             }
             override fun onError(error: PurchasesError) {
                 // Log error
@@ -74,8 +105,9 @@ class AndroidBillingRepository : BillingRepository {
                 if (pkg != null) {
                     Purchases.sharedInstance.purchasePackage(act, pkg, object : PurchaseCallback {
                         override fun onCompleted(transaction: com.revenuecat.purchases.models.StoreTransaction, customerInfo: CustomerInfo) {
-                            val isActive = customerInfo.entitlements["premium"]?.isActive == true
-                            _isPremium.value = isActive
+                            val isActive = customerInfo.entitlements["ArgeP Pro"]?.isActive == true || 
+                                           customerInfo.entitlements["premium"]?.isActive == true
+                            _isRcPremium.value = isActive
                             continuation.resume(Result.success(isActive))
                         }
 
@@ -101,8 +133,9 @@ class AndroidBillingRepository : BillingRepository {
     override suspend fun restorePurchases(): Result<Boolean> = suspendCoroutine { continuation ->
         Purchases.sharedInstance.restorePurchases(object : ReceiveCustomerInfoCallback {
             override fun onReceived(customerInfo: CustomerInfo) {
-                val isActive = customerInfo.entitlements["premium"]?.isActive == true
-                _isPremium.value = isActive
+                val isActive = customerInfo.entitlements["ArgeP Pro"]?.isActive == true || 
+                               customerInfo.entitlements["premium"]?.isActive == true
+                _isRcPremium.value = isActive
                 continuation.resume(Result.success(isActive))
             }
 
