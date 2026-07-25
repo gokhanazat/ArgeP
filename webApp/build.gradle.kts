@@ -15,7 +15,7 @@ kotlin {
             commonWebpackConfig {
                 outputFileName = "webApp.js"
                 devServer = (devServer ?: org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig.DevServer()).apply {
-                    static = mutableListOf(System.getProperty("user.dir") + "/src/wasmJsMain/resources")
+                    static = mutableListOf(projectDir.path + "/src/wasmJsMain/resources")
                 }
             }
         }

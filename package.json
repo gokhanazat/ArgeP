@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "echo Skipping build, using pre-built public folder",
+    "build": "./gradlew :webApp:wasmJsBrowserDistribution",
     "build:win": "cmd /c gradlew :webApp:wasmJsBrowserDistribution --no-daemon && if not exist public mkdir public && xcopy /E /I /Y webApp\\build\\dist\\wasmJs\\productionExecutable\\* public\\"
   }
 }
