@@ -142,13 +142,6 @@ class PaywallScreen : Screen {
                     
                     if (state.packages.isEmpty()) {
                         PremiumPackageCard(
-                            title = s.premiumMonthlyTitle,
-                            price = "${s.currencySymbol}299.99 / ${s.monthly}",
-                            description = s.premiumMonthlyDesc,
-                            onClick = {}
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        PremiumPackageCard(
                             title = s.premiumYearlyTitle,
                             price = "${s.currencySymbol}2.999 / ${s.yearly}",
                             description = s.premiumYearlyDesc,

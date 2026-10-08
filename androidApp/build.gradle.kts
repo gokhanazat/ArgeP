@@ -30,8 +30,8 @@ android {
         applicationId = "com.argesurec.android"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 107
-        versionName = "1.0.7"
+        versionCode = 110
+        versionName = "1.1.0"
 
         val supabaseUrl = properties.getProperty("SUPABASE_URL")?.removeSurrounding("\"") ?: ""
         val supabaseKey = properties.getProperty("SUPABASE_ANON_KEY")?.removeSurrounding("\"") ?: ""
@@ -43,12 +43,18 @@ android {
     }
 
 
+    val releaseStoreFilePath = properties.getProperty("RELEASE_STORE_FILE")
+    val releaseStoreFile = if (!releaseStoreFilePath.isNullOrEmpty()) file(releaseStoreFilePath) else null
+    val hasValidSigning = releaseStoreFile?.exists() == true
+
     signingConfigs {
-        create("release") {
-            storeFile = properties.getProperty("RELEASE_STORE_FILE")?.let { file(it) }
-            storePassword = properties.getProperty("RELEASE_STORE_PASSWORD")
-            keyAlias = properties.getProperty("RELEASE_KEY_ALIAS")
-            keyPassword = properties.getProperty("RELEASE_KEY_PASSWORD")
+        if (hasValidSigning) {
+            create("release") {
+                storeFile = releaseStoreFile
+                storePassword = properties.getProperty("RELEASE_STORE_PASSWORD")
+                keyAlias = properties.getProperty("RELEASE_KEY_ALIAS")
+                keyPassword = properties.getProperty("RELEASE_KEY_PASSWORD")
+            }
         }
     }
 
@@ -61,11 +67,14 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            if (hasValidSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 

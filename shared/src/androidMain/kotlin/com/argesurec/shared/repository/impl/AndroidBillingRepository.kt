@@ -39,7 +39,7 @@ class AndroidBillingRepository(
         if (createdAt != null) {
             val now = Clock.System.now()
             val diff = now - createdAt
-            diff <= 7.days
+            diff <= 30.days
         } else {
             false
         }

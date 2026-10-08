@@ -172,6 +172,7 @@ interface AppStrings {
     val premiumYearlyDesc: String
     val saveTwoMonths: String
     val managementSystem: String
+    val researchManagementPanel: String
     val emailExample: String
     val passwordDots: String
     val signUp: String
@@ -473,9 +474,10 @@ class EnStrings : AppStrings {
     override val premiumMonthlyTitle = "Premium Monthly"
     override val premiumMonthlyDesc = "Full access to all premium features."
     override val premiumYearlyTitle = "Premium Yearly"
-    override val premiumYearlyDesc = "Get 2 months for free!"
-    override val saveTwoMonths = "Get 2 months for free!"
+    override val premiumYearlyDesc = "30-day free trial included!"
+    override val saveTwoMonths = "30-day free trial!"
     override val managementSystem = "Management System"
+    override val researchManagementPanel = "Research Management Panel"
     override val emailExample = "email@example.com"
     override val passwordDots = "••••••••"
     override val signUp = "Sign Up"
@@ -777,9 +779,10 @@ class TrStrings : AppStrings {
     override val premiumMonthlyTitle = "Aylık Premium"
     override val premiumMonthlyDesc = "Tüm premium özelliklere tam erişim."
     override val premiumYearlyTitle = "Yıllık Premium"
-    override val premiumYearlyDesc = "2 ay ücretsiz kazanın!"
-    override val saveTwoMonths = "2 ay ücretsiz kazanın!"
+    override val premiumYearlyDesc = "30 gün ücretsiz deneme fırsatıyla!"
+    override val saveTwoMonths = "30 gün ücretsiz deneme!"
     override val managementSystem = "Yönetim Sistemi"
+    override val researchManagementPanel = "Araştırma Yönetim Paneli"
     override val emailExample = "eposta@ornek.com"
     override val passwordDots = "••••••••"
     override val signUp = "Kayıt Ol"
