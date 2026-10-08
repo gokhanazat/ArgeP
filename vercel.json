@@ -5,8 +5,12 @@
   "outputDirectory": "public",
   "rewrites": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "source": "/app",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/app.html"
     }
   ],
   "headers": [
