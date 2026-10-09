@@ -6,11 +6,11 @@
   "rewrites": [
     {
       "source": "/app",
-      "destination": "/app.html"
+      "destination": "/app/index.html"
     },
     {
       "source": "/login",
-      "destination": "/app.html"
+      "destination": "/app/index.html"
     }
   ],
   "headers": [
