@@ -3,7 +3,7 @@ agp = "8.7.2"
 android-compileSdk = "36"
 android-minSdk = "24"
 android-targetSdk = "36"
-androidx-activityCompose = "1.9.3"
+androidx-activityCompose = "1.10.1"
 androidx-appcompat = "1.7.0"
 androidx-core-ktx = "1.15.0"
 androidx-core-splashscreen = "1.0.1"
@@ -18,8 +18,9 @@ supabase = "3.0.0"
 voyager = "1.1.0-beta03"
 sqldelight = "2.1.0"
 androidx-lifecycle = "2.8.2"
-revenuecat = "8.3.0"
+revenuecat = "9.0.0"
 kotlinx-datetime = "0.6.1"
+appUpdate = "2.1.0"
 
 
 [libraries]
@@ -74,6 +75,8 @@ androidx-lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycl
 revenuecat-purchases = { module = "com.revenuecat.purchases:purchases", version.ref = "revenuecat" }
 revenuecat-purchases-ui = { module = "com.revenuecat.purchases:purchases-ui", version.ref = "revenuecat" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+play-app-update = { group = "com.google.android.play", name = "app-update", version.ref = "appUpdate" }
+play-app-update-ktx = { group = "com.google.android.play", name = "app-update-ktx", version.ref = "appUpdate" }
 
 
 [plugins]

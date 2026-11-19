@@ -4,6 +4,15 @@ include(":androidApp")
 include(":webApp")
 
 pluginManagement {
+    buildscript {
+        repositories {
+            google()
+            mavenCentral()
+        }
+        dependencies {
+            classpath("com.android.tools:r8:9.0.55")
+        }
+    }
     repositories {
         google {
             content {
