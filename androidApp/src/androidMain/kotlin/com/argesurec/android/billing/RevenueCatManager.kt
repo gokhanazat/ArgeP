@@ -2,12 +2,15 @@ package com.argesurec.android.billing
 
 import android.app.Activity
 import com.revenuecat.purchases.*
+import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.models.StoreTransaction
+import com.argesurec.shared.observeAuthUserId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.koin.core.Koin
 
 data class PaywallPackage(
     val id: String,
@@ -24,7 +27,11 @@ class RevenueCatManager private constructor() {
     private val _isPremium = MutableStateFlow(false)
     val isPremium: StateFlow<Boolean> = _isPremium.asStateFlow()
 
-    private val ENTITLEMENT_ID = "premium"
+    // RevenueCat panelindeki entitlement adları (webhook da bunları kullanır)
+    private val ENTITLEMENT_IDS = listOf("premium", "ArgeP Pro")
+
+    private var authBound = false
+    private var loggedInUserId: String? = null
 
     companion object {
         @Volatile
@@ -39,10 +46,40 @@ class RevenueCatManager private constructor() {
         checkSubscriptionStatus()
     }
 
+    private fun CustomerInfo.hasPremium(): Boolean =
+        ENTITLEMENT_IDS.any { entitlements[it]?.isActive == true }
+
+    /**
+     * RevenueCat kullanıcısını Supabase kullanıcısına bağlar (Purchases.logIn(userId)).
+     * Böylece webhook, abonelik olayını doğru Supabase kullanıcısına yazabilir ve web paneli de Premium'u görür.
+     */
+    fun bindAuth(koin: Koin) {
+        if (authBound) return
+        authBound = true
+        observeAuthUserId(koin) { uid ->
+            if (uid != null) {
+                if (uid == loggedInUserId) return@observeAuthUserId
+                loggedInUserId = uid
+                Purchases.sharedInstance.logIn(uid, object : LogInCallback {
+                    override fun onReceived(customerInfo: CustomerInfo, created: Boolean) {
+                        _isPremium.value = customerInfo.hasPremium()
+                    }
+                    override fun onError(error: PurchasesError) {}
+                })
+            } else if (loggedInUserId != null && !Purchases.sharedInstance.isAnonymous) {
+                loggedInUserId = null
+                Purchases.sharedInstance.logOut(object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
+                    override fun onReceived(customerInfo: CustomerInfo) { _isPremium.value = false }
+                    override fun onError(error: PurchasesError) { _isPremium.value = false }
+                })
+            }
+        }
+    }
+
     fun checkSubscriptionStatus() {
         Purchases.sharedInstance.getCustomerInfo(object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
             override fun onReceived(customerInfo: CustomerInfo) {
-                _isPremium.value = customerInfo.entitlements[ENTITLEMENT_ID]?.isActive == true
+                _isPremium.value = customerInfo.hasPremium()
             }
 
             override fun onError(error: PurchasesError) {
@@ -84,7 +121,7 @@ class RevenueCatManager private constructor() {
             PurchaseParams.Builder(activity, rcPackage).build(),
             object : PurchaseCallback {
                 override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
-                    val isPremiumNow = customerInfo.entitlements[ENTITLEMENT_ID]?.isActive == true
+                    val isPremiumNow = customerInfo.hasPremium()
                     _isPremium.value = isPremiumNow
                     onResult(isPremiumNow, null)
                 }
@@ -103,7 +140,7 @@ class RevenueCatManager private constructor() {
     fun restorePurchases(onResult: (Boolean, String?) -> Unit) {
         Purchases.sharedInstance.restorePurchases(object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
             override fun onReceived(customerInfo: CustomerInfo) {
-                val isPremiumNow = customerInfo.entitlements[ENTITLEMENT_ID]?.isActive == true
+                val isPremiumNow = customerInfo.hasPremium()
                 _isPremium.value = isPremiumNow
                 onResult(isPremiumNow, null)
             }

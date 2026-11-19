@@ -30,8 +30,8 @@ android {
         applicationId = "com.argesurec.android"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 110
-        versionName = "1.1.0"
+        versionCode = 113
+        versionName = "1.1.3"
 
         val supabaseUrl = properties.getProperty("SUPABASE_URL")?.removeSurrounding("\"") ?: ""
         val supabaseKey = properties.getProperty("SUPABASE_ANON_KEY")?.removeSurrounding("\"") ?: ""
@@ -90,7 +90,8 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.koin.android)
     implementation(libs.revenuecat.purchases)
-    implementation(libs.revenuecat.purchases.ui)
+    implementation(libs.play.app.update)
+    implementation(libs.play.app.update.ktx)
     debugImplementation(compose.uiTooling)
 }
 

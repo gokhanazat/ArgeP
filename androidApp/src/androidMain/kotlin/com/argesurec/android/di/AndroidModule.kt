@@ -6,6 +6,7 @@ import com.argesurec.shared.model.BillingRepository
 import org.koin.dsl.module
 
 val androidModule = module {
-    single { RevenueCatManager.getInstance() }
+    // RevenueCat kullanıcısı Supabase oturumuna bağlanır (webhook + web Premium senkronu için)
+    single { RevenueCatManager.getInstance().also { it.bindAuth(getKoin()) } }
     single<BillingRepository> { AndroidBillingRepository(get()) }
 }
